@@ -28,11 +28,11 @@ public class Main {
     public static void main(String[] args) throws IloException
     {
         // Time for model
-        int T = 15;
+        int T = 50;
         
         //read in network data
         //Network network = new Network("SimpleNetwork");
-        Network network = new Network("SuperSimple");
+        Network network = new Network("Braess_Small");
         
         //Create zones, nodes, and links from network data
         Zone[] zones = network.getZones();
@@ -102,7 +102,7 @@ public class Main {
         
         //Creating Vehicles and Demand
         ArrayList<Vehicle> V = new ArrayList<>();
-        //int count = 0;
+        int Vehcount = 0;
         for (Zone z: zones)
         {
             for (Zone d: zones)
@@ -113,7 +113,8 @@ public class Main {
                     //System.out.println("Time: "+i);
                     for (int j = 0; j<createDummyNup(Demand, i); j++)
                     {
-                        Vehicle v = new Vehicle(z,d,i,0);
+                        Vehcount++;
+                        Vehicle v = new Vehicle(z,d,i,0, Vehcount);
                         //System.out.println("new vehicle created");
                         V.add(v);
                         Node_TE start = G.findTENode(nodes[0], v.getOrigin(), v.getTime());
@@ -154,11 +155,8 @@ public class Main {
         //Column Generation Loop
         //--------------------------------------------------------
         int x = 0;
-        int count = 0;
-        while (count <2)
-        //while (x < 1)
+        while (x < 1)
         {
-            count++;
             x = 1;
             System.out.println("iteration");
             //--------------------------------------------------------
@@ -264,7 +262,7 @@ public class Main {
                             const1.addTerm(p.CheckZeta1up(t, l),p.getDelta());
                             const2.addTerm(p.CheckZeta1down(t, l),p.getDelta());
                         }
-                    }
+                    }                  
                     //Constraint 16c
                     range4 = c.addEq(c.sum(l.getNup(t+1),c.prod(-1,l.getNup(t)),c.prod(-1,const1)),0);
 
@@ -401,6 +399,7 @@ public class Main {
 
             //Solve Linear Program
             c.solve();
+            //c.output();
             System.out.print("Objective: ");
             System.out.println(c.getValue(c.sum(obj,obj3)));
             
@@ -425,6 +424,8 @@ public class Main {
 //                {
 //                    System.out.print("Time: "+t+" Sending Flow: ");
 //                    System.out.println(c.getValue(L.getSending(t)));
+//                    System.out.print("Time: "+t+" Receiving Flow: ");
+//                    System.out.println(c.getValue(L.getReceiving(t)));
 //                    System.out.print("Time: "+t+" Nup: ");
 //                    System.out.println(c.getValue(L.getNup(t)));
 //                    System.out.print("Time: "+t+" Ndown: ");
@@ -434,28 +435,48 @@ public class Main {
 //                }
 //            }
             
+//            for (Vehicle v: V)
+//            {
+//                System.out.println();
+//                System.out.println("Vehicle "+v.getId()+":");
+//                for (Path p: v.getRestrictedPaths())
+//                {
+//                    if (c.getValue(p.getDelta()) > 0)
+//                    {
+//                        p.printPath();
+//                        System.out.print("Delta: ");
+//                        System.out.println(c.getValue(p.getDelta()));
+//                        System.out.println();
+//                    }
+//                }
+//            }
+
+            //Calculate number of Vehicles assigned to a path
+            int vehOnPath = 0;
             for (Vehicle v: V)
             {
-                System.out.println("Vehicle: ");
-                System.out.println();
                 for (Path p: v.getRestrictedPaths())
                 {
-                    p.printPath();
-                    System.out.print("Delta: ");
-                    System.out.println(c.getValue(p.getDelta()));
-                    System.out.println();
+                    vehOnPath += c.getValue(p.getDelta());
                 }
             }
+            System.out.println("Vehicles assigned a path: "+vehOnPath);
+            
+            
             //--------------------------------------------------------
             // Update Duals
             //--------------------------------------------------------
             
+            System.out.println("Non Zero Dual Variables:");
             
             for (Vehicle v: V)
             {
                 v.updateRho(c.getDual(v.getRangeV()));
-                //System.out.print("Rho dual: ");
-                //System.out.println(v.getRho());
+                //if (v.getRho() != 0)
+                //{
+                    //System.out.print("Rho dual: ");
+                    //System.out.println(-v.getRho());
+                //}
             }
             for (Link l: source)
             {
@@ -463,16 +484,23 @@ public class Main {
                 {
                     //psi dual
                     G.findTENode(l,t,"down").updatePsi(c.getDual(G.findTENode(l,t,"down").getRangeL()));
-                    //G.findTENode(l,t,"down").printNode();
-                    //System.out.print("Psi dual: ");
-                    //System.out.println(G.findTENode(l,t,"down").getPsi());
+//                    if (G.findTENode(l,t,"down").getPsi() != 0)
+//                    {
+//                        G.findTENode(l,t,"down").printNode();
+//                        System.out.print("Psi dual: ");
+//                        System.out.println(G.findTENode(l,t,"down").getPsi());
+//                    }
                     
                     //Lambda dual
                     for (Link_TE j: G.getOutgoing(l, t))
                     {
                         G.findTENode(l,t,"down").updateLambda(c.getDual(G.findTENode(l,t,"down").getRangeN()));
-                        //System.out.print("Lambda: ");
-                        //System.out.println(G.findTENode(l,t,"down").getLambda());
+//                        if (G.findTENode(l,t,"down").getLambda() != 0)
+//                        {
+//                            G.findTENode(l,t,"down").printNode();
+//                            System.out.print("Lambda: ");
+//                            System.out.println(G.findTENode(l,t,"down").getLambda());
+//                        }
                     }
                 }
             }
@@ -482,30 +510,44 @@ public class Main {
                 {
                     //mu dual
                     G.findTENode(l,t,"up").updateMu(c.getDual(G.findTENode(l,t,"up").getRangeL()));
-                    //System.out.print("Mu dual: ");
-                    //System.out.println(G.findTENode(l,t,"up").getMu());
+//                    if (G.findTENode(l,t,"up").getMu() != 0)
+//                    {
+//                        G.findTENode(l,t,"up").printNode();
+//                        System.out.print("Mu dual: ");
+//                        System.out.println(G.findTENode(l,t,"up").getMu());
+//                    }
                     
                     //psi dual
                     G.findTENode(l,t,"down").updatePsi(c.getDual(G.findTENode(l,t,"down").getRangeL()));
-                    //G.findTENode(l,t,"down").printNode();
-                    //System.out.print("Psi dual: ");
-                    //System.out.println(G.findTENode(l,t,"down").getPsi());
+//                    if (G.findTENode(l,t,"down").getPsi() != 0)
+//                    {
+//                        G.findTENode(l,t,"down").printNode();
+//                        System.out.print("Psi dual: ");
+//                        System.out.println(G.findTENode(l,t,"down").getPsi());
+//                    }
                     
                     for (Link_TE j: G.getOutgoing(l, t))
                     {
                         //lambda dual
                         G.findTENode(l,t,"down").updateLambda(c.getDual(G.findTENode(l,t,"down").getRangeN()));
-                        //System.out.print("Lambda: ");
-                        //System.out.println(G.findTENode(l,t,"down").getLambda());
+//                        if (G.findTENode(l,t,"down").getLambda() != 0)
+//                        {
+//                            G.findTENode(l,t,"down").printNode();
+//                            System.out.print("Lambda: ");
+//                            System.out.println(G.findTENode(l,t,"down").getLambda());
+//                        }
                     }
                     
                     for (Link_TE j: G.getIncoming(l, t))
                     {
                         //theta dual
                         G.findTENode(j.getEnd().getLink(),t,"up").updateTheta(c.getDual(G.findTENode(l,t,"up").getRangeN()));
-                        j.printLink();
-                        System.out.print("Theta: ");
-                        System.out.println(G.findTENode(j.getEnd().getLink(),t,"up").getTheta());
+//                        if (G.findTENode(j.getEnd().getLink(),t,"up").getTheta() != 0)
+//                        {
+//                            j.printLink();
+//                            System.out.print("Theta: ");
+//                            System.out.println(-G.findTENode(j.getEnd().getLink(),t,"up").getTheta());
+//                        }
                     }
                 }
             }
@@ -515,16 +557,23 @@ public class Main {
                 {
                     //mu dual
                     G.findTENode(l,t,"up").updateMu(c.getDual(G.findTENode(l,t,"up").getRangeL()));
-                    //System.out.print("Mu dual: ");
-                    //System.out.println(G.findTENode(l,t,"up").getMu());
+//                    if (G.findTENode(l,t,"up").getMu() != 0)
+//                    {
+//                        G.findTENode(l,t,"up").printNode();
+//                        System.out.print("Mu dual: ");
+//                        System.out.println(G.findTENode(l,t,"up").getMu());
+//                    }
                     
                     for (Link_TE j: G.getIncoming(l, t))
                     {
                         //theta dual
                         G.findTENode(j.getEnd().getLink(),t,"up").updateTheta(c.getDual(G.findTENode(l,t,"up").getRangeN()));
-                        //j.printLink();
-                        //System.out.print("Theta: ");
-                        //System.out.println(G.findTENode(j.getEnd().getLink(),t,"up").getTheta());
+//                        if (G.findTENode(j.getEnd().getLink(),t,"up").getTheta() != 0)
+//                        {
+//                            j.printLink();
+//                            System.out.print("Theta: ");
+//                            System.out.println(-G.findTENode(j.getEnd().getLink(),t,"up").getTheta());
+//                        }
                     }
                 }
             }
@@ -534,9 +583,11 @@ public class Main {
             //Solve New Pricing Problem
             //--------------------------------------------------------
             System.out.println();
+            int veh = 0;
             for (Vehicle v: V)
             {
-                System.out.println("Vehicle Adding a Path ");
+                veh++;
+                int duplicate = 0;
                 Node_TE start = G.findTENode(nodes[0], v.getOrigin(), v.getTime());
                 for (Node_TE SortedNode : TopoSort) 
                 {
@@ -552,29 +603,40 @@ public class Main {
                 }
                 Path p = G.trace(start, G.destinationNodeTE(v.getDest(), nodes[nodes.length-1]));
                 p.createDelta(c);
-                v.addRestrictedPath(p);
-                System.out.println("New Path Added");
-                p.printPath();
-                System.out.println();
-                System.out.println("Path Travel Time: "+p.getPathTravelTime());
-                System.out.println("Rho: "+v.getRho());
-                System.out.println("Mu: "+p.getMuCost());
-                System.out.println("Psi: "+p.getPsiCost());
-                System.out.println("Lambda/Theta: "+p.getPathCostNodeLinks());
-                System.out.println("Duals: "+(v.getRho() + p.getMuCost() + p.getPsiCost() + p.getPathCostNodeLinks()));
-                System.out.println();
-                //double c_pi = p.getPathTravelTime() + v.getRho() + p.getMuCost() + p.getPsiCost() + p.getPathCostNodeLinks();
-                double c_pi = p.getPathTravelTime() - v.getAlpha(T) + v.getRho() + p.getMuCost() + p.getPsiCost() - p.getPathCostNodeLinks();
-                System.out.println("Reduced Cost of Path: "+c_pi);
-                System.out.println();
-                if (c_pi < 0)
+                duplicate = checkPath(p,v);
+                if (duplicate == 0)
                 {
-                    //Column generation need another interation
-                    x = 0;
+                    double c_pi = p.getPathTravelTime() - v.getAlpha(T) - v.getRho() + p.getMuCost()  - p.getPsiCost() - p.getThetaCost() - p.getLambdaCost();
+                    //System.out.println("Reduced Cost of Path: "+c_pi);
+                    if (c_pi < 0)
+                    {
+                        //Column generation need another interation
+                        v.addRestrictedPath(p);
+//                        if (veh == 1)   
+//                        {
+//                            System.out.println("Restricted Path Set:");
+//                            for (Path paths: v.getRestrictedPaths())
+//                            {
+//                                paths.printPath();
+//                            }
+//                        }
+                        x = 0;
+                    }
                 }
+//                else
+//                {
+//                    System.out.println("No new paths to be added");
+////                    p.printPath();
+////                    double c_pi = p.getPathTravelTime() - v.getAlpha(T) - v.getRho() + p.getMuCost()  - p.getPsiCost() - p.getThetaCost() - p.getLambdaCost();
+////                    System.out.println("Reduced Cost of Path: "+c_pi);
+//                    
+//                }
             }
             System.out.println();
+
+            //reset model for next iteration
             c.clearModel();
+            
         }
     }
         
@@ -600,9 +662,21 @@ public class Main {
 //        return dummyNup;
         if (demand > 0)
         {
-            if (T < 1)
+            if (T < 10)
             {
-                return 2;
+                return 10;
+            }
+        }
+        return 0;
+    }
+    
+    public static int checkPath(Path pi, Vehicle v)
+    {
+        for (Path p: v.getRestrictedPaths())
+        {
+            if (p.equals(pi))
+            {
+                return 1;
             }
         }
         return 0;
