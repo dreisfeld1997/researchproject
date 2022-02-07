@@ -7,6 +7,8 @@ package branch_price;
 
 import ilog.concert.IloRange;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.TreeMap;
 
 /**
  *
@@ -14,21 +16,22 @@ import java.util.ArrayList;
  */
 public class Vehicle 
 {
-    private ArrayList<Path> Rp;
-    private ArrayList<Path> p;
+    private TreeMap<Double, Path> RSTCPath;
+    private ArrayList<Path> Rp; 
     private Node origin, dest;
-    private int time, alpha;
+    private int time, alpha, id;
     public double rho;
     public IloRange rangeV;
     
-    public Vehicle(Node origin, Node dest, int time, double rho)
+    public Vehicle(Node origin, Node dest, int time, double rho, int id)
     {
         this.origin = origin;
         this.dest = dest;
         this.time = time;
         this.rho = rho;
         Rp = new ArrayList<>();
-        p = new ArrayList<>();
+        RSTCPath = new TreeMap<>();
+        this.id = id;
     }
     
     public Node getOrigin()
@@ -46,14 +49,19 @@ public class Vehicle
         return time;
     }
     
-    public void addRestrictedPath(Path pi)
+    public int getId()
     {
-        Rp.add(pi);
+        return id;
     }
     
     public void addPath(Path pi)
     {
-        p.add(pi);
+        Rp.add(pi);
+    }
+    
+    public void addRestrictedPath(Path pi, Double RC)
+    {
+        RSTCPath.put(RC, pi);
     }
     
     public void updateRho(double d)
@@ -66,20 +74,16 @@ public class Vehicle
         return rho;
     }
     
-    public ArrayList<Path> getRestrictedPaths()
+    public ArrayList<Path> getPaths()
     {
         return Rp;
     }
     
-    public ArrayList<Path> getPaths()
+    public TreeMap<Double, Path> getRestrictedPaths()
     {
-        return p;
+        return RSTCPath;
     }
     
-    public int countPaths()
-    {
-        return p.size();
-    }
     
     public void createRangeV(IloRange R)
     {

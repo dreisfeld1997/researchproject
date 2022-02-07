@@ -37,6 +37,9 @@ public class Link
     private IloNumVar[] S_i;
     private IloNumVar[] R_i;
     
+    ArrayList<Node_TE> TE_Nodes_up = new ArrayList<>();
+    ArrayList<Node_TE> TE_Nodes_down = new ArrayList<>();
+    
     
     // construct this Link with the given parameters
     public Link(Node start, Node end, double t_ff, double C, double alpha, double beta, double L)
@@ -51,6 +54,7 @@ public class Link
         
         start.addOutgoingLink(this);
         end.addIncomingLink(this);
+        
     }
     
     public double getTravelTime()
@@ -206,7 +210,38 @@ public class Link
         //z-1 avoids index out of bounds error (Destination of zone 1 = [0], zone 2 = [1], etc...)
         return S_i[t];
     }
+    
+    public void addTENodeup(Node_TE n)
+    {
+        TE_Nodes_up.add(n);
+    }
+    
+    public void addTENodedown(Node_TE n)
+    {
+        TE_Nodes_down.add(n);
+    }
+    
+    public ArrayList<Node_TE> getAllTENodesUp()
+    {
+        return TE_Nodes_up;
+    }
+    
+    public ArrayList<Node_TE> getAllTENodesDown()
+    {
+        return TE_Nodes_down;
+    }
+    
+    public Node_TE getTENodeUp(int t)
+    {
+        return TE_Nodes_up.get(t);
+    }
+    
+    public Node_TE getTENodeDown(int t)
+    {
+        return TE_Nodes_down.get(t);
+    }
 }
+
     
 
     

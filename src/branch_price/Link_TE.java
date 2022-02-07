@@ -41,10 +41,15 @@ public class Link_TE
     {
         return end.getPsi();
     }
-
-    public double getNodeLinkDual()
+    
+    public double getNodeLambda()
     {
-        return start.getLambda() + end.getTheta();
+        return start.getLambda();
+    }
+
+    public double getNodeTheta()
+    {
+        return end.getTheta();
     }
     
     public double getLinkTT()

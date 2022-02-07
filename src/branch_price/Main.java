@@ -17,6 +17,8 @@ import ilog.concert.IloNumExpr;
 import ilog.concert.IloRange;
 import ilog.cplex.IloCplex;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.TreeMap;
 
 
 public class Main {
@@ -29,6 +31,9 @@ public class Main {
     {
         // Time for model
         int T = 50;
+        
+        // Allowable paths to be store per vehicle
+        int numPaths = 50000;
         
         //read in network data
         //Network network = new Network("SimpleNetwork");
@@ -64,14 +69,6 @@ public class Main {
         }
         Node_TE[] TopoSort = graph.topologicalSorting();
         
-//        for (Node_TE N: TopoSort)
-//        {
-//            N.printNode();
-//        }
-//        for (Link_TE L: G.getAllLinks())
-//        {
-//            L.printLink();
-//        }
 
         //Create Linear Program
         IloCplex c = new IloCplex();
@@ -110,12 +107,11 @@ public class Main {
                 double Demand = z.getDemand(d);
                 for (int i = 0; i<T; i++)
                 {
-                    //System.out.println("Time: "+i);
                     for (int j = 0; j<createDummyNup(Demand, i); j++)
                     {
                         Vehcount++;
+                        //Create new vehicle
                         Vehicle v = new Vehicle(z,d,i,0, Vehcount);
-                        //System.out.println("new vehicle created");
                         V.add(v);
                         Node_TE start = G.findTENode(nodes[0], v.getOrigin(), v.getTime());
                         for (Node_TE SortedNode : TopoSort) 
@@ -130,35 +126,28 @@ public class Main {
                         {
                             G.relax(n);
                         }
-                        //System.out.println("About to create path for new vehicle created at time: "+i);
-//                        Path pi = new Path();
-//                        pi.add(G.findLink(start, G.findTENode(source[0], 2, "down")));
-//                        pi.add(G.findLink(G.findTENode(source[0], 2, "down"),G.findTENode(network.findLink(network.findNode(1), network.findNode(2)), 2, "up")));
-//                        pi.add(G.findLink(G.findTENode(network.findLink(network.findNode(1), network.findNode(2)), 2, "up"),G.findTENode(network.findLink(network.findNode(1), network.findNode(2)), 7, "down")));
-//                        pi.add(G.findLink(G.findTENode(network.findLink(network.findNode(1), network.findNode(2)), 7, "down"),G.findTENode(sink[0], 7, "up")));
-//                        pi.add(G.findLink(G.findTENode(sink[0], 7, "up"),G.findTENode(sink[0], 8, "down")));
                         Path pi = G.trace(start, G.destinationNodeTE(v.getDest(), nodes[nodes.length-1]));
-                        //pi.printPath();
                         pi.createDelta(c);
-                        v.addRestrictedPath(pi);
-                        //count++;
-                        //System.out.println(count);
+                        v.addPath(pi);
+                        pi.CalculateReducedCost(v, T);
+                        //v.addRestrictedPath(pi, pi.getReducedCost());
                     }
                 }
             }
         }
-       //System.out.println("Paths Created.");
-        
-        
+        long timer = System.nanoTime();
+        System.out.println("Vehicle Loading: "+timer/Math.pow(10,9));
         
         //--------------------------------------------------------
         //Column Generation Loop
         //--------------------------------------------------------
         int x = 0;
+        int count = 0;
         while (x < 1)
         {
             x = 1;
-            System.out.println("iteration");
+            count++;
+            System.out.println("iteration: "+count);
             //--------------------------------------------------------
             //Constraints for RMP
             //--------------------------------------------------------
@@ -177,7 +166,7 @@ public class Main {
             for (Vehicle v: V)
             {
                 IloLinearNumExpr const1 = c.linearNumExpr();
-                for (Path p: v.getRestrictedPaths())
+                for (Path p: v.getPaths())
                 {
                     //System.out.println("add term");
                     const1.addTerm(1,p.getDelta());
@@ -199,7 +188,7 @@ public class Main {
                     
                     for (Vehicle v: V)
                     {
-                        for (Path p: v.getRestrictedPaths())
+                        for (Path p: v.getPaths())
                         {
                             constDem.addTerm(p.CheckZeta1up(t, l),p.getDelta());
                             constA.addTerm(p.CheckZeta1down(t, l),p.getDelta());
@@ -231,7 +220,7 @@ public class Main {
                     {
                         for (Vehicle v: V)
                         {
-                            for (Path p: v.getRestrictedPaths())
+                            for (Path p: v.getPaths())
                             {
                                 constB.addTerm(p.CheckZeta2(t,l,j.getEnd().getLink()),p.getDelta());
                             }
@@ -257,7 +246,7 @@ public class Main {
                     IloLinearNumExpr const3b = c.linearNumExpr();
                     for (Vehicle v: V)
                     {
-                        for (Path p: v.getRestrictedPaths())
+                        for (Path p: v.getPaths())
                         {
                             const1.addTerm(p.CheckZeta1up(t, l),p.getDelta());
                             const2.addTerm(p.CheckZeta1down(t, l),p.getDelta());
@@ -297,7 +286,7 @@ public class Main {
                     {
                         for (Vehicle v: V)
                         {
-                            for (Path p: v.getRestrictedPaths())
+                            for (Path p: v.getPaths())
                             {
                                 const3a.addTerm(p.CheckZeta2(t,l,j.getEnd().getLink()),p.getDelta());
                             }
@@ -307,7 +296,7 @@ public class Main {
                     {
                         for (Vehicle v: V)
                         {
-                            for (Path p: v.getRestrictedPaths())
+                            for (Path p: v.getPaths())
                             {
                                 const3b.addTerm(p.CheckZeta2(t,l,j.getEnd().getLink()),p.getDelta());
                             }
@@ -336,7 +325,7 @@ public class Main {
                     IloLinearNumExpr const5 = c.linearNumExpr();
                     for (Vehicle v: V)
                     {
-                        for (Path p: v.getRestrictedPaths())
+                        for (Path p: v.getPaths())
                         {
                             const4.addTerm(p.CheckZeta1up(t, l),p.getDelta());
                         }
@@ -353,7 +342,7 @@ public class Main {
                     {
                         for (Vehicle v: V)
                         {
-                            for (Path p: v.getRestrictedPaths())
+                            for (Path p: v.getPaths())
                             {
                                 const5.addTerm(p.CheckZeta2(t,l,j.getEnd().getLink()),p.getDelta());
                             }
@@ -368,6 +357,8 @@ public class Main {
                 }
             }
 
+            timer = System.nanoTime() - timer;
+            long consttimer = timer;
 
             //--------------------------------------------------------
             //Create objective function
@@ -379,7 +370,7 @@ public class Main {
             for (Vehicle v: V)
             {
                 IloLinearNumExpr obj2 = c.linearNumExpr();
-                for (Path p: v.getRestrictedPaths())
+                for (Path p: v.getPaths())
                 {
                     obj.addTerm(p.getPathTravelTime(),p.getDelta());
                     
@@ -399,42 +390,15 @@ public class Main {
 
             //Solve Linear Program
             c.solve();
-            //c.output();
+            c.setOut(null);
+            
             System.out.print("Objective: ");
             System.out.println(c.getValue(c.sum(obj,obj3)));
             
-//            for (Link L: source)
-//            {
-//                System.out.println("Link: "+L);
-//                for (int t=0; t<T-1; t++)
-//                {
-//                    System.out.print("Time: "+t+" Nup: ");
-//                    System.out.println(c.getValue(L.getNup(t)));
-//                    System.out.print("Time: "+t+" Ndown: ");
-//                    System.out.println(c.getValue(L.getNdown(t))); 
-//                    System.out.print("Time: "+t+" Capacity: ");
-//                    System.out.println(L.getCapacity()); 
-//                }
-//            }
-//            
-//            for (Link L: links)
-//            {
-//                System.out.println("Link: "+L);
-//                for (int t=0; t<T-1; t++)
-//                {
-//                    System.out.print("Time: "+t+" Sending Flow: ");
-//                    System.out.println(c.getValue(L.getSending(t)));
-//                    System.out.print("Time: "+t+" Receiving Flow: ");
-//                    System.out.println(c.getValue(L.getReceiving(t)));
-//                    System.out.print("Time: "+t+" Nup: ");
-//                    System.out.println(c.getValue(L.getNup(t)));
-//                    System.out.print("Time: "+t+" Ndown: ");
-//                    System.out.println(c.getValue(L.getNdown(t))); 
-//                    System.out.print("Time: "+t+" Capacity: ");
-//                    System.out.println(L.getCapacity()); 
-//                }
-//            }
+            timer = System.nanoTime() - timer;
+            long solvetimer = timer;
             
+            //Print out vehicle paths
 //            for (Vehicle v: V)
 //            {
 //                System.out.println();
@@ -455,7 +419,7 @@ public class Main {
             int vehOnPath = 0;
             for (Vehicle v: V)
             {
-                for (Path p: v.getRestrictedPaths())
+                for (Path p: v.getPaths())
                 {
                     vehOnPath += c.getValue(p.getDelta());
                 }
@@ -467,16 +431,16 @@ public class Main {
             // Update Duals
             //--------------------------------------------------------
             
-            System.out.println("Non Zero Dual Variables:");
+//            System.out.println("Non Zero Dual Variables:");
             
             for (Vehicle v: V)
             {
                 v.updateRho(c.getDual(v.getRangeV()));
-                //if (v.getRho() != 0)
-                //{
-                    //System.out.print("Rho dual: ");
-                    //System.out.println(-v.getRho());
-                //}
+//                if (v.getRho() != 0)
+//                {
+//                    System.out.print("Rho dual: ");
+//                    System.out.println(-v.getRho());
+//                }
             }
             for (Link l: source)
             {
@@ -578,15 +542,15 @@ public class Main {
                 }
             }
             
+            timer = System.nanoTime() - timer;
+            long dualtimer = timer;
             
             //--------------------------------------------------------
             //Solve New Pricing Problem
             //--------------------------------------------------------
             System.out.println();
-            int veh = 0;
             for (Vehicle v: V)
             {
-                veh++;
                 int duplicate = 0;
                 Node_TE start = G.findTENode(nodes[0], v.getOrigin(), v.getTime());
                 for (Node_TE SortedNode : TopoSort) 
@@ -606,32 +570,51 @@ public class Main {
                 duplicate = checkPath(p,v);
                 if (duplicate == 0)
                 {
-                    double c_pi = p.getPathTravelTime() - v.getAlpha(T) - v.getRho() + p.getMuCost()  - p.getPsiCost() - p.getThetaCost() - p.getLambdaCost();
-                    //System.out.println("Reduced Cost of Path: "+c_pi);
+                    p.CalculateReducedCost(v, T);
+                    double c_pi = p.getReducedCost();
                     if (c_pi < 0)
                     {
                         //Column generation need another interation
-                        v.addRestrictedPath(p);
-//                        if (veh == 1)   
-//                        {
-//                            System.out.println("Restricted Path Set:");
-//                            for (Path paths: v.getRestrictedPaths())
-//                            {
-//                                paths.printPath();
-//                            }
-//                        }
+                        v.addPath(p);
+                        //v.addRestrictedPath(p, c_pi);
                         x = 0;
                     }
                 }
-//                else
-//                {
-//                    System.out.println("No new paths to be added");
-////                    p.printPath();
-////                    double c_pi = p.getPathTravelTime() - v.getAlpha(T) - v.getRho() + p.getMuCost()  - p.getPsiCost() - p.getThetaCost() - p.getLambdaCost();
-////                    System.out.println("Reduced Cost of Path: "+c_pi);
-//                    
-//                }
+                // update the reduced costs
+                for (Path pi: v.getPaths())
+                {
+                    pi.CalculateReducedCost(v, T);
+                }
+                
+                // Only keep certain number of paths in the Restricted Path set
+                if (v.getPaths().size() > numPaths)
+                {
+                    int index = -1;
+                    int counter = 0;
+                    double large = Double.NEGATIVE_INFINITY;
+                    for (Path pi: v.getPaths())
+                    {
+                        if (pi.getReducedCost() > large)
+                        {
+                            large = pi.getReducedCost();
+                            index = counter;
+                        }
+                        counter++;
+                    }
+                    v.getPaths().remove(index);
+                    //System.out.println("RC Removed: "+large);
+                }
             }
+            timer = System.nanoTime() - timer;
+            long sptimer = timer;
+            
+            
+            System.out.println();
+            System.out.println("Running Times: ");
+            System.out.println("RPM Constraints: "+consttimer/Math.pow(10,9));
+            System.out.println("Solve Model: "+solvetimer/Math.pow(10,9));
+            System.out.println("Update Duals: "+dualtimer/Math.pow(10,9));
+            System.out.println("Shortest path: "+sptimer/Math.pow(10,9));
             System.out.println();
 
             //reset model for next iteration
@@ -672,7 +655,7 @@ public class Main {
     
     public static int checkPath(Path pi, Vehicle v)
     {
-        for (Path p: v.getRestrictedPaths())
+        for (Path p: v.getPaths())
         {
             if (p.equals(pi))
             {

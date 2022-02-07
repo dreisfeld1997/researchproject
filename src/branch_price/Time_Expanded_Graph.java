@@ -31,10 +31,15 @@ public class Time_Expanded_Graph
             {
                 String dir = "up";
                 Node_TE N = new Node_TE(l,dir,t, initC, initC, initC, initC);
+                //Store Node_TE
                 TE_Nodes_Up.add(N);
+                l.TE_Nodes_up.add(N);
+                
                 dir = "down";
                 N = new Node_TE(l,dir,t, initC, initC, initC, initC);
+                //Store Node_TE
                 TE_Nodes_Down.add(N);
+                l.TE_Nodes_up.add(N);
             }  
         }
         
@@ -44,10 +49,15 @@ public class Time_Expanded_Graph
             {
                 String dir = "up";
                 Node_TE N = new Node_TE(l,dir,t, initC, initC, initC, initC);
+                //Store Node_TE
                 TE_Nodes_Up.add(N);
+                l.TE_Nodes_up.add(N);
+                
                 dir = "down";
                 N = new Node_TE(l,dir,t, initC, initC, initC, initC);
+                //Store Node_TE
                 TE_Nodes_Down.add(N);
+                l.TE_Nodes_up.add(N);
             }  
         }
         
@@ -57,10 +67,15 @@ public class Time_Expanded_Graph
             {
                 String dir = "up";
                 Node_TE N = new Node_TE(l,dir,t, initC, initC, initC, initC);
+                //Store Node_TE
                 TE_Nodes_Up.add(N);
+                l.TE_Nodes_up.add(N);
+                
                 dir = "down";
                 N = new Node_TE(l,dir,t, initC, initC, initC, initC);
+                //Store Node_TE
                 TE_Nodes_Down.add(N);
+                l.TE_Nodes_up.add(N);
             }  
         }
         
@@ -148,21 +163,17 @@ public class Time_Expanded_Graph
                 Node_TE j = Links.getEnd();
                 if (i.getDirection().equals("up"))
                 {
-                    if (j.cost > (i.cost + Links.getLinkTT()+Links.getLinkMu()+Links.getLinkPsi()))
+                    if (j.cost > (i.cost + Links.getLinkTT()+Links.getLinkMu()- Links.getLinkPsi()))
                     {
-                        j.cost = i.cost + Links.getLinkTT()+Links.getLinkMu()+Links.getLinkPsi();
+                        j.cost = i.cost + Links.getLinkTT()+Links.getLinkMu()- Links.getLinkPsi();
                         j.predecessor = i;
                     }
                 }
                 else
                 {
-//                    System.out.println("Test: ");
-//                    j.printNode();
-//                    System.out.println(j.cost);
-//                    System.out.println();
-                    if (j.cost > (i.cost + Links.getLinkTT()- Links.getNodeLinkDual()))
+                    if (j.cost > (i.cost + Links.getLinkTT()- Links.getNodeTheta() - Links.getNodeLambda()))
                     {
-                        j.cost = i.cost + Links.getLinkTT() - Links.getNodeLinkDual();
+                        j.cost = i.cost + Links.getLinkTT() - Links.getNodeTheta() - Links.getNodeLambda();
                        j.predecessor = i;
                     }
                 }
@@ -182,7 +193,6 @@ public class Time_Expanded_Graph
             n = pn;
             pn = n.predecessor;
         }
-        //pi.printPath();
         return pi;
     }
     

@@ -17,6 +17,7 @@ import java.util.ArrayList;
 public class Path extends ArrayList<Link_TE>
 {
     private IloNumVar delta;
+    private double C_pi;
     
     public double getPathTravelTime()
     {
@@ -125,17 +126,35 @@ public class Path extends ArrayList<Link_TE>
         return s;
     }
     
-    public double getPathCostNodeLinks()
+    public double getLambdaCost()
     {
         double s = 0;
         for (Link_TE L: this)
         {
-            //s = s + L.getNodeLinkDual()*CheckZeta2(L.getEnd().getTime(), L.getStart().getLink(),L.getEnd().getLink());
-            s += L.getNodeLinkDual();
+            s += L.getNodeLambda();
         }
         return s;
     }
     
+    public double getThetaCost()
+    {
+        double s = 0;
+        for (Link_TE L: this)
+        {
+            s += L.getNodeTheta();
+        }
+        return s;
+    }
+    
+    public void CalculateReducedCost(Vehicle v, int T)
+    {
+        C_pi = this.getPathTravelTime() - v.getAlpha(T) - v.getRho() + this.getMuCost()  - this.getPsiCost() - this.getThetaCost() - this.getLambdaCost();
+    }
+    
+    public double getReducedCost()
+    {
+        return C_pi;
+    }
     
     public void printPath()
     {
