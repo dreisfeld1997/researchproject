@@ -17,6 +17,7 @@ import ilog.concert.IloNumExpr;
 import ilog.concert.IloRange;
 import ilog.cplex.IloCplex;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -26,6 +27,7 @@ public class Main {
     /**
      * @param args the command line arguments
      */
+    
     
     public static void main(String[] args) throws IloException
     {
@@ -45,7 +47,6 @@ public class Main {
         Link[] links = network.getLinks();
         Link[] source = network.getSources();
         Link[] sink = network.getSinks();
-        
         
         //Create Time Expanded Graph G
         Time_Expanded_Graph G = new Time_Expanded_Graph(source, sink, links, T);
@@ -113,7 +114,7 @@ public class Main {
                         //Create new vehicle
                         Vehicle v = new Vehicle(z,d,i,0, Vehcount);
                         V.add(v);
-                        Node_TE start = G.findTENode(nodes[0], v.getOrigin(), v.getTime());
+                        Node_TE start = findLink(source, v.getOrigin().getId()).getTENodeUp(v.getTime());
                         for (Node_TE SortedNode : TopoSort) 
                         {
                             SortedNode.cost = Double.MAX_VALUE;
@@ -126,15 +127,16 @@ public class Main {
                         {
                             G.relax(n);
                         }
-                        Path pi = G.trace(start, G.destinationNodeTE(v.getDest(), nodes[nodes.length-1]));
+                        Link dest = network.findLink(v.getDest(), nodes[nodes.length-1]);
+                        Path pi = G.trace(start, G.destinationNodeTE(dest));
                         pi.createDelta(c);
                         v.addPath(pi);
                         pi.CalculateReducedCost(v, T);
-                        //v.addRestrictedPath(pi, pi.getReducedCost());
                     }
                 }
             }
         }
+
         long timer = System.nanoTime();
         System.out.println("Vehicle Loading: "+timer/Math.pow(10,9));
         
@@ -203,7 +205,7 @@ public class Main {
                     
                     if (t>0)
                     {
-                        G.findTENode(l,t,"down").createRangeL(range2); //psi
+                        l.getTENodeDown(t).createRangeL(range2); //psi
                     }
 
                     //Constraint 16g
@@ -216,7 +218,7 @@ public class Main {
                    //Constraint 16h
                     c.addLe((c.prod(1,l.getSending(t))),l.getCapacity());
                      
-                    for (Link_TE j: G.getOutgoing(l, t))
+                    for (Link_TE j: l.getTENodeDown(t).getOutgoing())
                     {
                         for (Vehicle v: V)
                         {
@@ -230,7 +232,7 @@ public class Main {
                     range3 = c.addEq(c.sum(l.getNdown(t+1),c.prod(-1,l.getNdown(t)),c.prod(-1,constB)),0);
                     if (t>0)
                     {
-                       G.findTENode(l,t,"down").createRangeN(range3); //lambda
+                       l.getTENodeDown(t).createRangeN(range3); //lambda
                     }  
                 }
             }
@@ -259,8 +261,8 @@ public class Main {
                     range5 = c.addLe(c.sum(const2,c.prod(-1,l.getSending(t))),0);
                     if (t > 0)
                     {
-                        G.findTENode(l,t,"up").createRangeL(range4); //mu
-                        G.findTENode(l,t,"down").createRangeL(range5); //psi
+                        l.getTENodeUp(t).createRangeL(range4); //mu
+                        l.getTENodeDown(t).createRangeL(range5); //psi
                     }
 
                     //Constraint 16g
@@ -272,17 +274,22 @@ public class Main {
                    //Constraint 16h
                     c.addLe((c.prod(1,l.getSending(t))),l.getCapacity());
 
+                    
+                    Link dummy = network.findLink(network.findNode(3), network.findNode(4));
+                    if (l != dummy)
+                    {
                     //Constraint 16i
                     if (t >= (int)(l.getL()/l.getW())-1)
                     {
                         c.addGe(c.sum(c.prod(1,l.getNdown(t+1-(int)(l.getL()/l.getW()))),c.prod(-1, l.getNup(t)),c.prod(-1,l.getReceiving(t))), -1*l.getL()*l.getKJam());
+                    }
                     }
 
                     //Constraint 16j
                     c.addLe((c.prod(1,l.getReceiving(t))),l.getCapacity());
                     
                     //new constraints
-                    for (Link_TE j: G.getOutgoing(l, t))
+                    for (Link_TE j: l.getTENodeDown(t).getOutgoing())
                     {
                         for (Vehicle v: V)
                         {
@@ -292,7 +299,7 @@ public class Main {
                             }
                         }
                     }
-                    for (Link_TE j: G.getIncoming(l, t))
+                    for (Link_TE j: l.getTENodeUp(t).getIncoming())
                     {
                         for (Vehicle v: V)
                         {
@@ -310,8 +317,8 @@ public class Main {
 
                     if (t>0)
                     {
-                        G.findTENode(l,t,"up").createRangeN(range7);
-                        G.findTENode(l,t,"down").createRangeN(range6);
+                        l.getTENodeUp(t).createRangeN(range7);
+                        l.getTENodeDown(t).createRangeN(range6);
                     }    
                 }
             }
@@ -335,10 +342,10 @@ public class Main {
                     
                     if (t>0)
                     {
-                        G.findTENode(l,t,"up").createRangeL(range8);
+                        l.getTENodeUp(t).createRangeL(range8);
                     }
                     
-                    for (Link_TE j: G.getIncoming(l, t))
+                    for (Link_TE j: l.getTENodeUp(t).getIncoming())
                     {
                         for (Vehicle v: V)
                         {
@@ -352,13 +359,12 @@ public class Main {
                     range9 = c.addLe(c.sum(const5,c.prod(-1,l.getReceiving(t))),0);
                     if (t>0)
                     {
-                        G.findTENode(l,t,"up").createRangeN(range9);
+                        l.getTENodeUp(t).createRangeN(range9);
                     }
                 }
             }
-
-            timer = System.nanoTime() - timer;
-            long consttimer = timer;
+            long consttimer = timer(timer);
+            timer = System.nanoTime();
 
             //--------------------------------------------------------
             //Create objective function
@@ -395,25 +401,8 @@ public class Main {
             System.out.print("Objective: ");
             System.out.println(c.getValue(c.sum(obj,obj3)));
             
-            timer = System.nanoTime() - timer;
-            long solvetimer = timer;
-            
-            //Print out vehicle paths
-//            for (Vehicle v: V)
-//            {
-//                System.out.println();
-//                System.out.println("Vehicle "+v.getId()+":");
-//                for (Path p: v.getRestrictedPaths())
-//                {
-//                    if (c.getValue(p.getDelta()) > 0)
-//                    {
-//                        p.printPath();
-//                        System.out.print("Delta: ");
-//                        System.out.println(c.getValue(p.getDelta()));
-//                        System.out.println();
-//                    }
-//                }
-//            }
+            long solvetimer = timer(timer);
+            timer = System.nanoTime();
 
             //Calculate number of Vehicles assigned to a path
             int vehOnPath = 0;
@@ -431,7 +420,7 @@ public class Main {
             // Update Duals
             //--------------------------------------------------------
             
-//            System.out.println("Non Zero Dual Variables:");
+            System.out.println("Non Zero Dual Variables:");
             
             for (Vehicle v: V)
             {
@@ -447,23 +436,23 @@ public class Main {
                 for (int t=1; t<T-1; t++)
                 {
                     //psi dual
-                    G.findTENode(l,t,"down").updatePsi(c.getDual(G.findTENode(l,t,"down").getRangeL()));
-//                    if (G.findTENode(l,t,"down").getPsi() != 0)
+                    l.getTENodeDown(t).updatePsi(c.getDual(l.getTENodeDown(t).getRangeL()));
+//                    if (l.getTENodeDown(t).getPsi() != 0)
 //                    {
-//                        G.findTENode(l,t,"down").printNode();
+//                        l.getTENodeDown(t).printNode();
 //                        System.out.print("Psi dual: ");
-//                        System.out.println(G.findTENode(l,t,"down").getPsi());
+//                        System.out.println(-l.getTENodeDown(t).getPsi());
 //                    }
                     
                     //Lambda dual
-                    for (Link_TE j: G.getOutgoing(l, t))
+                    for (Link_TE j: l.getTENodeDown(t).getOutgoing())
                     {
-                        G.findTENode(l,t,"down").updateLambda(c.getDual(G.findTENode(l,t,"down").getRangeN()));
-//                        if (G.findTENode(l,t,"down").getLambda() != 0)
+                        l.getTENodeDown(t).updateLambda(c.getDual(l.getTENodeDown(t).getRangeN()));
+//                        if (l.getTENodeDown(t).getLambda() != 0)
 //                        {
-//                            G.findTENode(l,t,"down").printNode();
+//                            l.getTENodeDown(t).printNode();
 //                            System.out.print("Lambda: ");
-//                            System.out.println(G.findTENode(l,t,"down").getLambda());
+//                            System.out.println(l.getTENodeDown(t).getLambda());
 //                        }
                     }
                 }
@@ -473,44 +462,44 @@ public class Main {
                 for (int t=1; t<T-1; t++)
                 {
                     //mu dual
-                    G.findTENode(l,t,"up").updateMu(c.getDual(G.findTENode(l,t,"up").getRangeL()));
-//                    if (G.findTENode(l,t,"up").getMu() != 0)
+                    l.getTENodeUp(t).updateMu(c.getDual(l.getTENodeUp(t).getRangeL()));
+//                    if (l.getTENodeUp(t).getMu() != 0)
 //                    {
-//                        G.findTENode(l,t,"up").printNode();
+//                        l.getTENodeUp(t).printNode();
 //                        System.out.print("Mu dual: ");
-//                        System.out.println(G.findTENode(l,t,"up").getMu());
+//                        System.out.println(l.getTENodeUp(t).getMu());
 //                    }
                     
                     //psi dual
-                    G.findTENode(l,t,"down").updatePsi(c.getDual(G.findTENode(l,t,"down").getRangeL()));
-//                    if (G.findTENode(l,t,"down").getPsi() != 0)
+                    l.getTENodeDown(t).updatePsi(c.getDual(l.getTENodeDown(t).getRangeL()));
+//                    if (l.getTENodeDown(t).getPsi() != 0)
 //                    {
-//                        G.findTENode(l,t,"down").printNode();
+//                        l.getTENodeDown(t).printNode();
 //                        System.out.print("Psi dual: ");
-//                        System.out.println(G.findTENode(l,t,"down").getPsi());
+//                        System.out.println(-l.getTENodeDown(t).getPsi());
 //                    }
                     
-                    for (Link_TE j: G.getOutgoing(l, t))
+                    for (Link_TE j: l.getTENodeDown(t).getOutgoing())
                     {
                         //lambda dual
-                        G.findTENode(l,t,"down").updateLambda(c.getDual(G.findTENode(l,t,"down").getRangeN()));
-//                        if (G.findTENode(l,t,"down").getLambda() != 0)
+                        l.getTENodeDown(t).updateLambda(c.getDual(l.getTENodeDown(t).getRangeN()));
+//                        if (l.getTENodeDown(t).getLambda() != 0)
 //                        {
-//                            G.findTENode(l,t,"down").printNode();
+//                            l.getTENodeDown(t).printNode();
 //                            System.out.print("Lambda: ");
-//                            System.out.println(G.findTENode(l,t,"down").getLambda());
+//                            System.out.println(l.getTENodeDown(t).getLambda());
 //                        }
                     }
                     
-                    for (Link_TE j: G.getIncoming(l, t))
+                    for (Link_TE j: l.getTENodeUp(t).getIncoming())
                     {
                         //theta dual
-                        G.findTENode(j.getEnd().getLink(),t,"up").updateTheta(c.getDual(G.findTENode(l,t,"up").getRangeN()));
-//                        if (G.findTENode(j.getEnd().getLink(),t,"up").getTheta() != 0)
+                        l.getTENodeUp(t).updateTheta(c.getDual(l.getTENodeUp(t).getRangeN()));
+//                        if (l.getTENodeUp(t).getTheta() != 0)
 //                        {
 //                            j.printLink();
 //                            System.out.print("Theta: ");
-//                            System.out.println(-G.findTENode(j.getEnd().getLink(),t,"up").getTheta());
+//                            System.out.println(-l.getTENodeUp(t).getTheta());
 //                        }
                     }
                 }
@@ -520,30 +509,30 @@ public class Main {
                 for (int t=1; t<T-1; t++)
                 {
                     //mu dual
-                    G.findTENode(l,t,"up").updateMu(c.getDual(G.findTENode(l,t,"up").getRangeL()));
-//                    if (G.findTENode(l,t,"up").getMu() != 0)
+                    l.getTENodeUp(t).updateMu(c.getDual(l.getTENodeUp(t).getRangeL()));
+//                    if (l.getTENodeUp(t).getMu() != 0)
 //                    {
-//                        G.findTENode(l,t,"up").printNode();
+//                        l.getTENodeUp(t).printNode();
 //                        System.out.print("Mu dual: ");
-//                        System.out.println(G.findTENode(l,t,"up").getMu());
+//                        System.out.println(l.getTENodeUp(t).getMu());
 //                    }
                     
-                    for (Link_TE j: G.getIncoming(l, t))
+                    for (Link_TE j: l.getTENodeUp(t).getIncoming())
                     {
                         //theta dual
-                        G.findTENode(j.getEnd().getLink(),t,"up").updateTheta(c.getDual(G.findTENode(l,t,"up").getRangeN()));
-//                        if (G.findTENode(j.getEnd().getLink(),t,"up").getTheta() != 0)
+                        l.getTENodeUp(t).updateTheta(c.getDual(l.getTENodeUp(t).getRangeN()));
+//                        if (l.getTENodeUp(t).getTheta() != 0)
 //                        {
 //                            j.printLink();
 //                            System.out.print("Theta: ");
-//                            System.out.println(-G.findTENode(j.getEnd().getLink(),t,"up").getTheta());
+//                            System.out.println(-l.getTENodeUp(t).getTheta());
 //                        }
                     }
                 }
             }
             
-            timer = System.nanoTime() - timer;
-            long dualtimer = timer;
+            long dualtimer = timer(timer);
+            timer = System.nanoTime();
             
             //--------------------------------------------------------
             //Solve New Pricing Problem
@@ -552,7 +541,7 @@ public class Main {
             for (Vehicle v: V)
             {
                 int duplicate = 0;
-                Node_TE start = G.findTENode(nodes[0], v.getOrigin(), v.getTime());
+                Node_TE start = findLink(source, v.getOrigin().getId()).getTENodeUp(v.getTime());
                 for (Node_TE SortedNode : TopoSort) 
                 {
                     SortedNode.cost = Double.MAX_VALUE;
@@ -561,11 +550,15 @@ public class Main {
                         SortedNode.cost = 0;
                     }
                 }
+                
                 for (Node_TE n: TopoSort)
                 {
                     G.relax(n);
                 }
-                Path p = G.trace(start, G.destinationNodeTE(v.getDest(), nodes[nodes.length-1]));
+                
+                Link dest = network.findLink(v.getDest(), nodes[nodes.length-1]);
+                Path p = G.trace(start, G.destinationNodeTE(dest));
+
                 p.createDelta(c);
                 duplicate = checkPath(p,v);
                 if (duplicate == 0)
@@ -576,37 +569,43 @@ public class Main {
                     {
                         //Column generation need another interation
                         v.addPath(p);
-                        //v.addRestrictedPath(p, c_pi);
                         x = 0;
                     }
                 }
+//                else
+//                {
+//                    System.out.println();
+//                    System.out.println("Vehicle "+v.getId()+":");
+//                    for (Path paths: v.getPaths())
+//                    {
+//                        if (c.getValue(paths.getDelta()) > 0)
+//                        {
+//                            paths.printPath();
+//                            System.out.print("Delta: ");
+//                            System.out.println(c.getValue(paths.getDelta()));
+//                            System.out.println();
+//                        }
+//                    }
+//                }
+                
                 // update the reduced costs
                 for (Path pi: v.getPaths())
                 {
                     pi.CalculateReducedCost(v, T);
                 }
                 
+                Collections.sort(v.getPaths());
+                
                 // Only keep certain number of paths in the Restricted Path set
                 if (v.getPaths().size() > numPaths)
                 {
-                    int index = -1;
-                    int counter = 0;
-                    double large = Double.NEGATIVE_INFINITY;
-                    for (Path pi: v.getPaths())
-                    {
-                        if (pi.getReducedCost() > large)
-                        {
-                            large = pi.getReducedCost();
-                            index = counter;
-                        }
-                        counter++;
-                    }
+                    int index = v.getPaths().size()-1;
                     v.getPaths().remove(index);
-                    //System.out.println("RC Removed: "+large);
                 }
+                
             }
-            timer = System.nanoTime() - timer;
-            long sptimer = timer;
+            long sptimer = timer(timer);
+            timer = System.nanoTime();
             
             
             System.out.println();
@@ -617,6 +616,32 @@ public class Main {
             System.out.println("Shortest path: "+sptimer/Math.pow(10,9));
             System.out.println();
 
+//            if (x!= 0)
+//            {
+//                for (Link l: links)
+//                {
+//                    System.out.println("Link: "+l);
+//                    for (int i = 0; i<T-1; i++)
+//                    {
+//                        System.out.println();
+//                        System.out.println("time: "+i);
+//                        System.out.println("Nup: "+c.getValue(l.getNup(i)));
+//                        System.out.println("Ndown: "+c.getValue(l.getNdown(i)));
+//                        System.out.println("Sending: "+c.getValue(l.getSending(i)));
+//                        System.out.println("Receiving: "+c.getValue(l.getReceiving(i)));
+//                    }
+//                }
+//                for (Link l: sink)
+//                {
+//                    System.out.println("Link: "+l);
+//                    for (int i = 0; i<T-1; i++)
+//                    {
+//                        System.out.println();
+//                        System.out.println("time: "+i);
+//                        System.out.println("Nup: "+c.getValue(l.getNup(i)));
+//                    }
+//                }
+//            }
             //reset model for next iteration
             c.clearModel();
             
@@ -645,9 +670,9 @@ public class Main {
 //        return dummyNup;
         if (demand > 0)
         {
-            if (T < 10)
+            if (T < 6)
             {
-                return 10;
+                return 7;
             }
         }
         return 0;
@@ -663,6 +688,18 @@ public class Main {
             }
         }
         return 0;
+    }
+    
+    public static Link findLink(Link[] links, int origin)
+    {
+       return links[origin-1];
+    }
+    
+    public static Long timer(long t)
+    {
+        long oldtimer = t;
+        long timer = System.nanoTime();
+        return timer - oldtimer;
     }
     
    

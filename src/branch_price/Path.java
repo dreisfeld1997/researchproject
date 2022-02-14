@@ -13,8 +13,9 @@ import ilog.concert.IloException;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
 import java.util.ArrayList;
+import java.util.Comparator;
 
-public class Path extends ArrayList<Link_TE>
+public class Path extends ArrayList<Link_TE> implements Comparable<Path>
 {
     private IloNumVar delta;
     private double C_pi;
@@ -164,4 +165,19 @@ public class Path extends ArrayList<Link_TE>
             L.printLink();
         }
     }
+    
+    public int compareTo(Path p)
+    {
+        int x = 0;
+        if (this.getReducedCost() - p.getReducedCost() < 0)
+        {
+            x = -1;
+        }
+        else if (this.getReducedCost() - p.getReducedCost() > 0)
+        {
+            x = 1;
+        }    
+        return x;
+    }
+
 }

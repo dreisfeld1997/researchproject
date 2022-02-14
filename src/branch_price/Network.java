@@ -81,8 +81,8 @@ public class Network
         nodes = new Node[numnodes];
         links = new Link[numlinks];
         zones = new Zone[numzones];
-        //source = new Link[numzones-1];
-        //sink = new Link[numzones-1];
+        //source = new Link[numzones];
+        //sink = new Link[numzones];
         source = new Link[1];
         sink = new Link[1];
         
@@ -160,13 +160,13 @@ public class Network
         
         
         //Create Dummy Sink and Source Links
-        source[0] = new Link(nodes[0], zones[0], 1, 100000000, 1, 1, 1);
-        sink[0] = new Link(zones[numzones-1], nodes[numnodes-1], 1, 100000000, 1, 1, 1);
 //        for (int i = 0; i<numzones; i++) 
 //        {
-//            source [i] = new Link(nodes[0], zones[i], 10, 1000000, 1, 1, 0);
-//            sink [i] = new Link(zones[i], nodes[numnodes-1], 10, 1000000, 1, 1, 0);
+//            source[i] = new Link(nodes[0], zones[i], 1, 100000000, 1, 1, 1);
+//            sink[i] = new Link(zones[i], nodes[numnodes-1], 1, 100000000, 1, 1, 1);
 //        }
+        source[0] = new Link(nodes[0], zones[0], 1, 100000000, 1, 1, 1);
+        sink[0] = new Link(zones[numzones-1], nodes[numnodes-1], 1, 100000000, 1, 1, 1);
         
         Scanner sc = new Scanner(netFile);
         while (sc.hasNext())
@@ -297,7 +297,21 @@ public class Network
                 return link;
             }
         }
-          return null;
+        for (Link link : source) 
+        {
+            if (link.getStart() == i && link.getEnd() == j) 
+            {
+                return link;
+            }
+        }
+        for (Link link : sink) 
+        {
+            if (link.getStart() == i && link.getEnd() == j) 
+            {
+                return link;
+            }
+        }
+        return null;
     }
     
     public void dijkstras(Node r)

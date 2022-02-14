@@ -23,6 +23,7 @@ public class Node_TE
     
     ArrayList<Link_TE> outgoing = new ArrayList<>();
     ArrayList<Link_TE> incoming = new ArrayList<>();
+    ArrayList<Link_TE> AllLinkTE = new ArrayList<>();
     
     public Node_TE(){}
     
@@ -129,6 +130,18 @@ public class Node_TE
     public void addIncomingLink(Link_TE l)
     {
         this.incoming.add(l);
+    }
+    
+    //returns all links for this node
+    public ArrayList<Link_TE> getAllLinksTE()
+    {
+        return this.AllLinkTE;
+    }
+    
+    //adds link l to the list of incoming links to this node
+    public void addAllTELinks(Link_TE l)
+    {
+        this.AllLinkTE.add(l);
     }
     
     public void createRangeL(IloRange R)

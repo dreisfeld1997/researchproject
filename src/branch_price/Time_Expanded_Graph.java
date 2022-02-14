@@ -39,7 +39,7 @@ public class Time_Expanded_Graph
                 N = new Node_TE(l,dir,t, initC, initC, initC, initC);
                 //Store Node_TE
                 TE_Nodes_Down.add(N);
-                l.TE_Nodes_up.add(N);
+                l.TE_Nodes_down.add(N);
             }  
         }
         
@@ -57,7 +57,7 @@ public class Time_Expanded_Graph
                 N = new Node_TE(l,dir,t, initC, initC, initC, initC);
                 //Store Node_TE
                 TE_Nodes_Down.add(N);
-                l.TE_Nodes_up.add(N);
+                l.TE_Nodes_down.add(N);
             }  
         }
         
@@ -75,7 +75,7 @@ public class Time_Expanded_Graph
                 N = new Node_TE(l,dir,t, initC, initC, initC, initC);
                 //Store Node_TE
                 TE_Nodes_Down.add(N);
-                l.TE_Nodes_up.add(N);
+                l.TE_Nodes_down.add(N);
             }  
         }
         
@@ -92,6 +92,7 @@ public class Time_Expanded_Graph
                     {
                         Link_TE A = new Link_TE(m,n);
                         TE_Links.add(A);
+                        m.addAllTELinks(A);
                     }
                 }
             }
@@ -109,6 +110,7 @@ public class Time_Expanded_Graph
                     {
                         Link_TE A = new Link_TE(m,n);
                         TE_NodeLinks.add(A);
+                        m.addAllTELinks(A);
                     }
                 }
             }
@@ -198,9 +200,9 @@ public class Time_Expanded_Graph
     
     public Link_TE findLink(Node_TE i, Node_TE j)
     {
-        for (Link_TE link : TE_AllLinks) 
+        for (Link_TE link : i.getAllLinksTE()) 
         {
-            if (link.getStart() == i && link.getEnd() == j) 
+            if (link.getEnd() == j) 
             {
                 return link;
             }
@@ -208,108 +210,21 @@ public class Time_Expanded_Graph
         return null;
     }
     
-    public Node_TE findTENode(Node source, Node origin, int deptime)
-    {
-        //find starting Time Expanded node
-        Node_TE r = null;
-        for (Node_TE n: TE_Nodes_Up)
-        {
-            if (source == n.getLink().getStart())
-            {
-                if (origin.equals(n.getLink().getEnd()))
-                {
-                    if (deptime == n.getTime())
-                    {
-                        r = n;
-                    }
-                }
-            }
-        }
-        if (r == null)
-        {
-            System.out.println("error");
-        }
-        return r;
-    }
-    
-        public Node_TE findTENode(Link l, int t, String dir)
-    {
-        //find starting Time Expanded node
-        Node_TE r = null;
-        for (Node_TE n: TE_AllNodes)
-        {
-            if (l == n.getLink())
-            {
-                if (t == n.getTime())
-                {
-                    if (dir.equals(n.getDirection()))
-                    {
-                        r = n;
-                    }
-                }
-            }
-        }
-        if (r == null)
-        {
-            System.out.println("error");
-        }
-        return r;
-    }
-    
     //finds destination link with lowest cost
-    public Node_TE destinationNodeTE(Node dest, Node sink)
+    public Node_TE destinationNodeTE(Link L)
     {
         Node_TE finaldest = null;
         double c = Double.MAX_VALUE;
-        for (Node_TE n: TE_AllNodes)
+        for (Node_TE n: L.getAllTENodesDown())
         {
-            if (dest == n.getLink().getStart() && sink == n.getLink().getEnd())
+            if (n.cost < c)
             {
-                if (n.getDirection().equals("down"))
-                {
-                    if (n.cost < c)
-                    {
-                        finaldest = n;
-                        c = n.cost;
-                    }
-                }
+                finaldest = n;
+                c = n.cost;
             }
         }
         return finaldest;
     }
     
-    public ArrayList<Link_TE> getOutgoing(Link l, int t)
-    {
-        ArrayList<Link_TE> Outgoing = new ArrayList<>();
-        
-        for (Link_TE j: getTENodeLinks())
-        {
-            if (j.getStart().getLink().equals(l))
-            {
-                if ((t == j.getStart().getTime()))
-                {
-                    Outgoing.add(j);
-                }
-            }
-        }
-        return Outgoing;
-    }
-    
-    public ArrayList<Link_TE> getIncoming(Link l, int t)
-    {
-        ArrayList<Link_TE> Incoming = new ArrayList<>();
-        
-        for (Link_TE j: getTENodeLinks())
-        {
-            if (j.getEnd().getLink().equals(l))
-            {
-                if ((t == j.getEnd().getTime()))
-                {
-                    Incoming.add(j);
-                }
-            }
-        }
-        return Incoming;
-    }
     
 }
