@@ -34,7 +34,8 @@ public class Network
     {
         try 
         {
-            File myObj = new File("data/"+name+"/net.txt");
+            //File myObj = new File("data/"+name+"/net.txt");
+            File myObj = new File("data/Tests/"+name+"/net.txt");
             Scanner myReader = new Scanner(myObj);
             String data;
             int i = 0;
@@ -81,15 +82,27 @@ public class Network
         nodes = new Node[numnodes];
         links = new Link[numlinks];
         zones = new Zone[numzones];
-        //source = new Link[numzones];
-        //sink = new Link[numzones];
-        source = new Link[1];
-        sink = new Link[1];
+        
+        //All sources and sinks (doesnt work)
+        source = new Link[numzones];
+        sink = new Link[numzones];
+
+        //1 source and 1 sink
+//        source = new Link[1];
+//        sink = new Link [1];
+        
+        //2 source and 1 sink
+//        source = new Link[2];
+//        sink = new Link[1];
+        
+        //1 source and 2 sink
+//        source = new Link[1];
+//        sink = new Link[2];
         
         try
         {
-            readNetwork(new File("data/"+name+"/net.txt"));
-            readTrips(new File("data/"+name+"/trips.txt"));
+            readNetwork(new File("data/Tests/"+name+"/net.txt"));
+            readTrips(new File("data/Tests/"+name+"/trips.txt"));
         }
         catch(IOException ex)
         {
@@ -159,14 +172,26 @@ public class Network
         }
         
         
-        //Create Dummy Sink and Source Links
-//        for (int i = 0; i<numzones; i++) 
-//        {
-//            source[i] = new Link(nodes[0], zones[i], 1, 100000000, 1, 1, 1);
-//            sink[i] = new Link(zones[i], nodes[numnodes-1], 1, 100000000, 1, 1, 1);
-//        }
-        source[0] = new Link(nodes[0], zones[0], 1, 100000000, 1, 1, 1);
-        sink[0] = new Link(zones[numzones-1], nodes[numnodes-1], 1, 100000000, 1, 1, 1);
+        //All sources and sinks (doesnt work)
+        for (int i = 0; i<numzones; i++) 
+        {
+            source[i] = new Link(nodes[0], zones[i], 1, 100000000, 1, 1, 1);
+            sink[i] = new Link(zones[i], nodes[numnodes-1], 1, 100000000, 1, 1, 1);
+        }
+
+        //1 source and 1 sink
+//        source[0] = new Link(nodes[0], zones[0], 1, 100000000, 1, 1, 1);
+//        sink[0] = new Link(zones[numzones-1], nodes[numnodes-1], 1, 100000000, 1, 1, 1);
+        
+        //1 source and 2 sink
+//        source[0] = new Link(nodes[0], zones[0], 1, 100000000, 1, 1, 1);
+//        sink[0] = new Link(zones[numzones-2], nodes[numnodes-1], 1, 100000000, 1, 1, 1);
+//        sink[1] = new Link(zones[numzones-1], nodes[numnodes-1], 1, 100000000, 1, 1, 1);
+
+        //2 source and 1 sink
+//        source[0] = new Link(nodes[0], zones[0], 1, 100000000, 1, 1, 1);
+//        source[1] = new Link(nodes[0], zones[1], 1, 100000000, 1, 1, 1);
+//        sink[0] = new Link(zones[numzones-1], nodes[numnodes-1], 1, 100000000, 1, 1, 1);
         
         Scanner sc = new Scanner(netFile);
         while (sc.hasNext())

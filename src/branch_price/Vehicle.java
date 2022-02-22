@@ -19,7 +19,7 @@ public class Vehicle
     private ArrayList<Path> Rp; 
     private Node origin, dest;
     private int time, alpha, id;
-    public double rho;
+    public double rho, assignment;
     public IloRange rangeV;
     
     public Vehicle(Node origin, Node dest, int time, double rho, int id)
@@ -82,9 +82,18 @@ public class Vehicle
         return rangeV;
     }
     
-    public int getAlpha(int T)
+    public double getAlpha(int T)
     {
-        return T - time;
+        return (1-assignment)*(T - time);
     }
     
+    public void assign(double a)
+    {
+        assignment = a;
+    }
+    
+    public void reassign()
+    {
+        assignment = 0;
+    }
 }

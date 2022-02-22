@@ -63,6 +63,7 @@ public class Path extends ArrayList<Link_TE> implements Comparable<Path>
         return delta;
     }
     
+    
     public int CheckZeta1up(int t, Link i)
     {
         for (Link_TE L: this)
@@ -157,6 +158,17 @@ public class Path extends ArrayList<Link_TE> implements Comparable<Path>
         return C_pi;
     }
     
+    public void printRCComponents(Vehicle v, int T)
+    {
+        System.out.println("Travel Time: "+this.getPathTravelTime());
+        System.out.println("Alpha: "+v.getAlpha(T));
+        System.out.println("Rho: "+v.getRho());
+        System.out.println("Mu: "+this.getMuCost());
+        System.out.println("Psi: "+this.getPsiCost());
+        System.out.println("Theta: "+this.getThetaCost());
+        System.out.println("Lambda: "+this.getLambdaCost());
+    }
+    
     public void printPath()
     {
         System.out.println("Path: ");
@@ -164,6 +176,12 @@ public class Path extends ArrayList<Link_TE> implements Comparable<Path>
         {
             L.printLink();
         }
+//        for (Link_TE L: this)
+//        {
+//            L.getStart().printNode();
+//            System.out.println("Cost: "+L.getStart().cost);
+//        }
+        System.out.println("RC: "+getReducedCost());
     }
     
     public int compareTo(Path p)

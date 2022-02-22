@@ -158,29 +158,34 @@ public class Time_Expanded_Graph
     
     public void relax(Node_TE i)
     {
-        for (Link_TE Links: TE_AllLinks)
+//        System.out.println();
+//        System.out.print("Node: ");
+//        i.printNode();
+        for (Link_TE Links: i.getOutgoing())
         {
-            if (Links.getStart() == i)
+            Node_TE j = Links.getEnd();
+            if (i.getDirection().equals("up"))
             {
-                Node_TE j = Links.getEnd();
-                if (i.getDirection().equals("up"))
+                if (j.cost > (i.cost + Links.getLinkTT()+Links.getLinkMu() - Links.getLinkPsi()))
                 {
-                    if (j.cost > (i.cost + Links.getLinkTT()+Links.getLinkMu()- Links.getLinkPsi()))
-                    {
-                        j.cost = i.cost + Links.getLinkTT()+Links.getLinkMu()- Links.getLinkPsi();
-                        j.predecessor = i;
-                    }
+                    j.cost = i.cost + Links.getLinkTT()+Links.getLinkMu() - Links.getLinkPsi();
+                    j.predecessor = i;
+//                    System.out.print("Successor: ");
+//                    j.printNode();
                 }
-                else
+            }
+            else
+            {
+                if (j.cost > (i.cost + Links.getLinkTT() - Links.getNodeTheta() - Links.getNodeLambda()))
                 {
-                    if (j.cost > (i.cost + Links.getLinkTT()- Links.getNodeTheta() - Links.getNodeLambda()))
-                    {
-                        j.cost = i.cost + Links.getLinkTT() - Links.getNodeTheta() - Links.getNodeLambda();
-                       j.predecessor = i;
-                    }
+                    j.cost = i.cost + Links.getLinkTT() - Links.getNodeTheta() - Links.getNodeLambda();
+                    j.predecessor = i;
+//                    System.out.print("Successor: ");
+//                    j.printNode();
                 }
             }
         }
+        
     }
     
     public Path trace(Node_TE r, Node_TE s)
