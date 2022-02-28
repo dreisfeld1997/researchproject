@@ -75,11 +75,11 @@ public class PrintCounts
     
     public void printPaths(IloCplex c, Vehicle v) throws IloException
     {
+        System.out.println("Vehicle: "+v.getId());
         for (Path paths: v.getPaths())
         {
             if (c.getValue(paths.getDelta()) > 0)
             {
-                System.out.println("Vehicle: "+v.getId());
                 paths.printPath();
                 System.out.print("Delta: ");
                 System.out.println(c.getValue(paths.getDelta()));

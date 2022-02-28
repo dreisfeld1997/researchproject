@@ -22,12 +22,13 @@ public class Network
     private Zone[] zones;
     private Link[] source;
     private Link[] sink;
-    int numnodes;
-    int numlinks;
-    int numzones;
-    int firstThru;
-    int origin;
-    String dest;
+    private int numnodes;
+    private int numlinks;
+    private int numzones;
+    private int firstThru;
+    private int origin;
+    private ArrayList <Integer> sourceNodes;
+    private ArrayList <Integer> sinkNodes;
           
     
     public Network(String name)
@@ -83,21 +84,52 @@ public class Network
         links = new Link[numlinks];
         zones = new Zone[numzones];
         
+        sourceNodes = new ArrayList<>();
+        sinkNodes = new ArrayList<>();
+
+        int[][] OD = null;
+        try
+        {
+            OD = createSourceSink(new File("data/Tests/"+name+"/trips.txt"));
+        }
+        catch(IOException ex)
+        {
+            ex.printStackTrace(System.err);
+        }
+        
+        for (int r = 0; r<numzones; r++)
+        {
+            int sum = 0;
+            for (int c = 0; c<numzones; c++)
+            {
+                sum += OD[r][c];
+            }
+            if (sum > 0)
+            {
+                sourceNodes.add(r+1);
+            }
+        }
+        
+        for (int c = 0; c<numzones; c++)
+        {
+            int sum = 0;
+            for (int r = 0; r<numzones; r++)
+            {
+                sum += OD[r][c];
+            }
+            if (sum > 0)
+            {
+                sinkNodes.add(c+1);
+            }
+        }
         //All sources and sinks (doesnt work)
-        source = new Link[numzones];
-        sink = new Link[numzones];
+        source = new Link[sourceNodes.size()];
+        sink = new Link[sinkNodes.size()];
 
         //1 source and 1 sink
 //        source = new Link[1];
 //        sink = new Link [1];
-        
-        //2 source and 1 sink
-//        source = new Link[2];
-//        sink = new Link[1];
-        
-        //1 source and 2 sink
-//        source = new Link[1];
-//        sink = new Link[2];
+
         
         try
         {
@@ -172,26 +204,22 @@ public class Network
         }
         
         
-        //All sources and sinks (doesnt work)
-        for (int i = 0; i<numzones; i++) 
+        //Create Source Nodes
+        for (int i = 0; i<sourceNodes.size(); i++) 
         {
-            source[i] = new Link(nodes[0], zones[i], 1, 100000000, 1, 1, 1);
-            sink[i] = new Link(zones[i], nodes[numnodes-1], 1, 100000000, 1, 1, 1);
+            source[i] = new Link(nodes[0], zones[sourceNodes.get(i)-1], 1, 100000000, 1, 1, 1);
+        }
+        //Create Sinks Nodes
+        for (int i = 0; i<sinkNodes.size(); i++) 
+        {
+            sink[i] = new Link(zones[sinkNodes.get(i)-1], nodes[numnodes-1], 1, 100000000, 1, 1, 1);
         }
 
         //1 source and 1 sink
 //        source[0] = new Link(nodes[0], zones[0], 1, 100000000, 1, 1, 1);
 //        sink[0] = new Link(zones[numzones-1], nodes[numnodes-1], 1, 100000000, 1, 1, 1);
         
-        //1 source and 2 sink
-//        source[0] = new Link(nodes[0], zones[0], 1, 100000000, 1, 1, 1);
-//        sink[0] = new Link(zones[numzones-2], nodes[numnodes-1], 1, 100000000, 1, 1, 1);
-//        sink[1] = new Link(zones[numzones-1], nodes[numnodes-1], 1, 100000000, 1, 1, 1);
 
-        //2 source and 1 sink
-//        source[0] = new Link(nodes[0], zones[0], 1, 100000000, 1, 1, 1);
-//        source[1] = new Link(nodes[0], zones[1], 1, 100000000, 1, 1, 1);
-//        sink[0] = new Link(zones[numzones-1], nodes[numnodes-1], 1, 100000000, 1, 1, 1);
         
         Scanner sc = new Scanner(netFile);
         while (sc.hasNext())
@@ -247,6 +275,7 @@ public class Network
     {
         Scanner sc = new Scanner(tripsFile); 
         String line = sc.next();
+        String dest;
         while (!line.contains("Origin"))
         {
            line = sc.next();
@@ -298,6 +327,75 @@ public class Network
             count++;
         }
         sc.close();
+    }
+    
+    public int[][] createSourceSink(File tripsFile) throws IOException
+    {
+        Scanner sc = new Scanner(tripsFile); 
+        String line = sc.next();
+        String dest;
+        
+        int[][] OD = new int[numzones][numzones];
+
+        while (!line.contains("Origin"))
+        {
+           line = sc.next();
+        }
+        
+        //counter variable, this variable makes sure we do not skip a sc.next()
+        //so that the first iteration of the while loop (line.contains("Origin")) returns true
+        int count = 0; 
+        
+        //loops through trip data
+        while (sc.hasNext())
+        {
+            //If loop will always generate new line value, except for the first iteration
+            if (count > 0)
+            {
+                line = sc.next();
+            }
+            //Check if Origin has been reached
+            if (line.contains("Origin"))
+            {
+                //convert from string to integer
+                String org = sc.next();
+                origin = Integer.parseInt(org);
+                //if Origin is created the next value the data reads will be a trip destination
+                dest = sc.next();
+            }
+            else
+            {
+                //if Origin is not found, the next value the data reads will be a destination
+                dest = line;
+            }
+            //Creates a node variable for the destination
+            int destination = Integer.parseInt(dest);
+            Node ndest = zones[destination-1];
+            //Read next value of data, which will be demand
+            String dem = sc.next();
+            //Skips semi colon
+            if (dem.contains(":"))
+            {
+                dem = sc.next();
+            }
+            //Turns demand into a double variable
+            dem = dem.replace(";","");
+            double demand = Double.parseDouble(dem);
+            
+            //update OD matrix if flow exists
+            if (demand > 0)
+            {
+                OD[origin-1][destination-1] = 1;
+            }
+            else
+            {
+                OD[origin-1][destination-1] = 0;
+            }
+
+            count++;
+        }
+        sc.close();
+        return OD;
     }
     
 

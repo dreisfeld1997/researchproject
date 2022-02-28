@@ -5,7 +5,10 @@
  */
 package branch_price;
 
+import ilog.concert.IloException;
+import ilog.concert.IloNumVar;
 import ilog.concert.IloRange;
+import ilog.cplex.IloCplex;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
@@ -21,6 +24,7 @@ public class Vehicle
     private int time, alpha, id;
     public double rho, assignment;
     public IloRange rangeV;
+    private IloNumVar P;
     
     public Vehicle(Node origin, Node dest, int time, double rho, int id)
     {
@@ -82,8 +86,19 @@ public class Vehicle
         return rangeV;
     }
     
+    public void CreateP(IloCplex cplex) throws IloException
+    {
+        P = cplex.numVar(0,1);
+    }
+    
+    public IloNumVar getP()
+    {
+        return P;
+    }
+    
     public double getAlpha(int T)
     {
+        //return T - time;
         return (1-assignment)*(T - time);
     }
     

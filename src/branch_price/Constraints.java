@@ -45,7 +45,7 @@ public class Constraints
             {
                 IloLinearNumExpr A = c.linearNumExpr();
                 IloLinearNumExpr constDem = c.linearNumExpr();
-                IloLinearNumExpr B = c.linearNumExpr();
+                //IloLinearNumExpr B = c.linearNumExpr();
 
                 for (Vehicle v: V)
                 {
@@ -65,6 +65,7 @@ public class Constraints
                 if (t>0)
                 {
                     l.getTENodeDown(t).createRangeL(range1); //psi dual
+                    //l.getTENodeDown(t+1).createRangeL(range1); //psi dual
                 }
 
                 //Constraint 16g
@@ -77,6 +78,7 @@ public class Constraints
                //Constraint 16h
                 c.addLe((c.prod(1,l.getSending(t))),l.getCapacity());
 
+                IloLinearNumExpr B = c.linearNumExpr();
                 for (Link_TE j: l.getTENodeDown(t).getOutgoing())
                 {
                     for (Vehicle v: V)
@@ -92,7 +94,7 @@ public class Constraints
                 if (t>0)
                 {
                    l.getTENodeDown(t).createRangeN(range2); //lambda dual
-                }  
+                }   
             }
         }
     }
@@ -159,7 +161,7 @@ public class Constraints
                 range3 = c.addEq(c.sum(l.getNdown(t+1),c.prod(-1,l.getNdown(t)),c.prod(-1,C)),0);
                 if (t>0)
                 {
-                    l.getTENodeDown(t).createRangeN(range3);
+                    l.getTENodeDown(t).createRangeN(range3); //lambda dual
                 }
                 for (Link_TE j: l.getTENodeUp(t).getIncoming())
                 {
@@ -205,7 +207,6 @@ public class Constraints
                     {
                         l.getTENodeUp(t).createRangeL(range1);
                     }
-                    
                     for (Link_TE j: l.getTENodeUp(t).getIncoming())
                     {
                         IloLinearNumExpr B = c.linearNumExpr();

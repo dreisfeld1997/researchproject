@@ -25,13 +25,29 @@ public class Main {
     public static void main(String[] args) throws IloException
     {
         // Time for model
-        int T = 15;
+        int T = 50;
         
         // Allowable paths to be store per vehicle
         int numPaths = 100;
         
         //read in network data
-        Network network = new Network("Braess_Small");
+        //Network network = new Network("Braess_Small");
+        ArrayList<String> tests = new ArrayList<>();
+        String t = "Test";
+        for (int i=43; i<44; i++)
+        {
+            String num = Integer.toString(i);
+            String test = t+num;
+            tests.add(test);
+        }
+        ArrayList<Double> traveltimes= new ArrayList<>();
+        ArrayList<Double> vehs = new ArrayList<>();
+        
+        for (int a= 0; a<tests.size(); a++)
+        {
+            Network network = new Network(tests.get(a));
+        
+        
         
         //Creates printer class
         PrintCounts printer = new PrintCounts();
@@ -138,7 +154,7 @@ public class Main {
         }
 
         long timer = System.nanoTime();
-        System.out.println("Vehicle Loading: "+timer/Math.pow(10,9));
+        System.out.println("Vehicle Loading: "+(timer/Math.pow(10,9)));
         
         //--------------------------------------------------------------------------------------------------------------
         //--------------------------------------------------------------------------------------------------------------
@@ -155,6 +171,7 @@ public class Main {
         {
             x = 1;
             count++;
+            System.out.println(tests.get(a));
             System.out.println("iteration: "+count);
             
             //Reset all assignments to 0
@@ -202,6 +219,8 @@ public class Main {
                     vehOnPath += c.getValue(p.getDelta());
                     assignment += c.getValue(p.getDelta());
                 }
+                //System.out.println("Vehicle: "+v.getId());
+                //System.out.println("Assignment: "+assignment);
                 v.assign(assignment);
             }
             System.out.println("Vehicles assigned a path: "+vehOnPath);
@@ -245,21 +264,32 @@ public class Main {
                 Link dest = network.findLink(v.getDest(), nodes[nodes.length-1]);
                 Path p = G.trace(start, G.destinationNodeTE(dest));
 
+//                System.out.println("Paths created: ");
+//                System.out.println("vehicle: "+v.getId());
+//                p.printPath();
+                
                 p.createDelta(c);
                 duplicate = checkPath(p,v);
                 if (duplicate == 0)
                 {
                     p.CalculateReducedCost(v, T);
+//                    System.out.println("vehicle: "+v.getId());
+//                    p.printPath();
                     double c_pi = p.getReducedCost();
+
                     if (c_pi < 0)
                     {
                         v.addPath(p);
                         x = 0;
                     }
+                    else
+                    {
+//                        printer.printPaths(c, v);
+                    }
                 }
                 else
                 {
-                    //printer.printPaths(c, v);
+//                    printer.printPaths(c, v);
                 }
 
                 
@@ -268,6 +298,13 @@ public class Main {
                 {
                     pi.CalculateReducedCost(v, T);
                 }
+                
+//                System.out.println("Paths at this point: ");
+//                System.out.println("vehicle: "+v.getId());
+//                for (Path pi: v.getPaths())
+//                {
+//                    pi.printPath();
+//                }
                 
                 Collections.sort(v.getPaths());
                 
@@ -283,16 +320,31 @@ public class Main {
             timer = System.nanoTime();
             
             //printer.printTimer(consttimer, solvetimer, dualtimer, sptimer);
-
+            
+            System.out.println("Paths at this point: ");
             if (x!= 0)
             {
                 //printer.print(links, source, sink, c, T);
                 obj.PrintObjective(c);
+                traveltimes.add(obj.getObjective(c));
+                vehs.add(vehOnPath);
+                
+//                for (Vehicle v: V)
+//                {
+//                    printer.printPaths(c, v);
+//                }
             }
             //reset model for next iteration
             c.clearModel();
-            
+        } 
         }
+        for (int i = 0; i<tests.size(); i++)
+        {
+            System.out.print(tests.get(i)+": ");
+            System.out.print(traveltimes.get(i)+"  Veh through: ");
+            System.out.println(vehs.get(i));
+        }
+        
     }
         
     
@@ -317,9 +369,9 @@ public class Main {
 //        return dummyNup;
         if (demand > 0)
         {
-            if (T < 2)
+            if (T < 10)
             {
-                return 7;
+                return 2;
             }
         }
         return 0;

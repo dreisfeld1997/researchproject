@@ -55,11 +55,12 @@ public class ObjectiveFunction
     {
         System.out.print("Objective: ");
         System.out.println(c.getValue(c.sum(obj1,obj3)));
-        System.out.println(c.getValue(obj1));
+        //System.out.println(c.getValue(obj1));
+        //System.out.println(c.getValue(obj3));
     }
     
     public double getObjective(IloCplex c) throws IloException
     {
-        return c.getValue(obj1);
+        return c.getValue(c.sum(obj1,obj3));
     }
 }

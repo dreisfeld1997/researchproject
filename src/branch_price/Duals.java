@@ -35,6 +35,7 @@ public class Duals
     {
         if (v.getRho() != 0 & x == 0)
         {
+            System.out.print("Vehicle: "+v.getId()+" ");
             System.out.print("Rho dual: ");
             System.out.println(-v.getRho());
         }
@@ -119,6 +120,7 @@ public class Duals
                 {
                     l.getTENodeDown(t).updateLambda(c.getDual(l.getTENodeDown(t).getRangeN()));
                     printLambdaDuals(l, j, t);
+                   
                 }
 
                 //Theta Duals
