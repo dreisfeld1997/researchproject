@@ -11,6 +11,9 @@ package branch_price;
  */
 import ilog.concert.IloException;
 import ilog.cplex.IloCplex;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -22,32 +25,32 @@ public class Main {
      */
     
     
-    public static void main(String[] args) throws IloException
+    public static void main(String[] args) throws IloException, FileNotFoundException
     {
         // Time for model
-        int T = 50;
+        int dt = 6;
+        int duration = 1200;
+        int T = duration/dt + 1;
         
         // Allowable paths to be store per vehicle
-        int numPaths = 100;
+        //int numPaths = 70;
         
+        // Creating a File object that represents the disk file.
+        PrintStream o = new PrintStream(new File("log.txt"));
+  
+        // Store current System.out before assigning a new value
+        PrintStream console = System.out;
+        
+        long timer = System.nanoTime();
+        ArrayList<Double> objectives = new ArrayList<>();
+        ArrayList<Integer> iterations = new ArrayList<>();
+        int iter = 0;
+        for (int num=44; num<45; num++)
+        {
+            int numPaths = num;
+
         //read in network data
-        //Network network = new Network("Braess_Small");
-        ArrayList<String> tests = new ArrayList<>();
-        String t = "Test";
-        for (int i=43; i<44; i++)
-        {
-            String num = Integer.toString(i);
-            String test = t+num;
-            tests.add(test);
-        }
-        ArrayList<Double> traveltimes= new ArrayList<>();
-        ArrayList<Double> vehs = new ArrayList<>();
-        
-        for (int a= 0; a<tests.size(); a++)
-        {
-            Network network = new Network(tests.get(a));
-        
-        
+        Network network = new Network("ColumnTest1");
         
         //Creates printer class
         PrintCounts printer = new PrintCounts();
@@ -63,7 +66,7 @@ public class Main {
         //Create Time Expanded Graph G
         //--------------------------------------------------------------------------------------------------------------
         
-        Time_Expanded_Graph G = new Time_Expanded_Graph(source, sink, links, T);
+        Time_Expanded_Graph G = new Time_Expanded_Graph(source, sink, links, dt, duration);
         G.combineAllNodes();
         G.combineAllLinks();
         ArrayList<Node_TE> TE_AllNodes = G.getAllNodes();
@@ -82,6 +85,7 @@ public class Main {
             graph.addLink(L.getStart(), L.getEnd());
         }
         Node_TE[] TopoSort = graph.topologicalSorting();
+        
         
      
         //Create Linear Program
@@ -115,6 +119,7 @@ public class Main {
         //Load Vehicle Demand
         //--------------------------------------------------------------------------------------------------------------
         
+            
         ArrayList<Vehicle> V = new ArrayList<>();
         int Vehcount = 0;
         for (Zone z: zones)
@@ -122,15 +127,15 @@ public class Main {
             for (Zone d: zones)
             {
                 double Demand = z.getDemand(d);
-                for (int i = 0; i<T; i++)
+                for (int i = 0; i<duration; i += dt)
                 {
                     for (int j = 0; j<createDummyNup(Demand, i); j++)
                     {
                         Vehcount++;
                         //Create new vehicle
-                        Vehicle v = new Vehicle(z,d,i,0, Vehcount);
+                        Vehicle v = new Vehicle(z,d,i,0,0,Vehcount);
                         V.add(v);
-                        Node_TE start = findLink(source, v.getOrigin().getId()).getTENodeUp(v.getTime());
+                        Node_TE start = findLink(source, v.getOrigin().getId()).getTENodeUp(v.getTime()/dt);
                         for (Node_TE SortedNode : TopoSort) 
                         {
                             SortedNode.cost = Double.MAX_VALUE;
@@ -146,15 +151,16 @@ public class Main {
                         Link dest = network.findLink(v.getDest(), nodes[nodes.length-1]);
                         Path pi = G.trace(start, G.destinationNodeTE(dest));
                         pi.createDelta(c);
+                        v.CreateP(c);
                         v.addPath(pi);
-                        pi.CalculateReducedCost(v, T);
+                        pi.CalculateReducedCost(v);
                     }
                 }
             }
         }
 
-        long timer = System.nanoTime();
-        System.out.println("Vehicle Loading: "+(timer/Math.pow(10,9)));
+        //long timer = System.nanoTime();
+        //System.out.println("Vehicle Loading: "+(timer/Math.pow(10,9)));
         
         //--------------------------------------------------------------------------------------------------------------
         //--------------------------------------------------------------------------------------------------------------
@@ -162,32 +168,30 @@ public class Main {
         //--------------------------------------------------------------------------------------------------------------
         //--------------------------------------------------------------------------------------------------------------
         
+            
         Constraints Const = new Constraints();
         Duals D = new Duals();
-        
+            
         int x = 0;
         int count = 0;
         while (x < 1)
         {
+            // Assign console to output stream
+            System.setOut(console);
             x = 1;
             count++;
-            System.out.println(tests.get(a));
+            System.out.println("Tests: "+numPaths);
             System.out.println("iteration: "+count);
             
-            //Reset all assignments to 0
-            for (Vehicle v: V)
-            {
-                v.reassign();
-            }
             
             //--------------------------------------------------------------------------------------------------------------
             //Constraints for RMP
             //--------------------------------------------------------------------------------------------------------------
             
             Const.setVehConstraints(V, c);
-            Const.setSourceConstraints(V, source, c, T);
-            Const.setLinkConstraints(V, links, c, T, network);
-            Const.setSinkConstraints(V, sink, c, T);
+            Const.setSourceConstraints(V, source, c, dt, duration);
+            Const.setLinkConstraints(V, links, c, dt, duration, network);
+            Const.setSinkConstraints(V, sink, c, dt, duration);
             
             long consttimer = timer(timer);
             timer = System.nanoTime();
@@ -198,7 +202,7 @@ public class Main {
             
             ObjectiveFunction obj = new ObjectiveFunction();
             
-            obj.CreateObjective(V, c, T);
+            obj.CreateObjective(V, c, duration);
 
             //Solve Linear Program
             c.solve();
@@ -213,17 +217,11 @@ public class Main {
             double vehOnPath = 0;
             for (Vehicle v: V)
             {
-                double assignment = 0;
                 for (Path p: v.getPaths())
                 {
                     vehOnPath += c.getValue(p.getDelta());
-                    assignment += c.getValue(p.getDelta());
                 }
-                //System.out.println("Vehicle: "+v.getId());
-                //System.out.println("Assignment: "+assignment);
-                v.assign(assignment);
             }
-            System.out.println("Vehicles assigned a path: "+vehOnPath);
             
             
             //-----------------------------------------------------------------------------------------------------
@@ -242,7 +240,6 @@ public class Main {
             //--------------------------------------------------------------------------------------------------------
             //Solve New Pricing Problem
             //--------------------------------------------------------------------------------------------------------
-            System.out.println();
             for (Vehicle v: V)
             {
                 int duplicate = 0;
@@ -263,48 +260,26 @@ public class Main {
                 
                 Link dest = network.findLink(v.getDest(), nodes[nodes.length-1]);
                 Path p = G.trace(start, G.destinationNodeTE(dest));
-
-//                System.out.println("Paths created: ");
-//                System.out.println("vehicle: "+v.getId());
-//                p.printPath();
                 
                 p.createDelta(c);
                 duplicate = checkPath(p,v);
                 if (duplicate == 0)
                 {
-                    p.CalculateReducedCost(v, T);
-//                    System.out.println("vehicle: "+v.getId());
-//                    p.printPath();
+                    p.CalculateReducedCost(v);
                     double c_pi = p.getReducedCost();
-
+                    
                     if (c_pi < 0)
-                    {
+                    {   
                         v.addPath(p);
                         x = 0;
                     }
-                    else
-                    {
-//                        printer.printPaths(c, v);
-                    }
                 }
-                else
-                {
-//                    printer.printPaths(c, v);
-                }
-
                 
                 // update the reduced costs
                 for (Path pi: v.getPaths())
                 {
-                    pi.CalculateReducedCost(v, T);
+                    pi.CalculateReducedCost(v);
                 }
-                
-//                System.out.println("Paths at this point: ");
-//                System.out.println("vehicle: "+v.getId());
-//                for (Path pi: v.getPaths())
-//                {
-//                    pi.printPath();
-//                }
                 
                 Collections.sort(v.getPaths());
                 
@@ -316,35 +291,41 @@ public class Main {
                 }
                 
             }
+            if (count > 300)
+            {
+                x = 1;
+            }
+            
             long sptimer = timer(timer);
             timer = System.nanoTime();
+            printer.printTimer(consttimer, solvetimer, dualtimer, sptimer);
+            //printer.print(links, source, sink, c, dt, duration);
             
-            //printer.printTimer(consttimer, solvetimer, dualtimer, sptimer);
-            
-            System.out.println("Paths at this point: ");
             if (x!= 0)
             {
-                //printer.print(links, source, sink, c, T);
                 obj.PrintObjective(c);
-                traveltimes.add(obj.getObjective(c));
-                vehs.add(vehOnPath);
+                System.out.println("Vehicles on a Path: "+vehOnPath); 
+                objectives.add(obj.getObjective(c));
+                iterations.add(count);
                 
 //                for (Vehicle v: V)
 //                {
-//                    printer.printPaths(c, v);
+//                    //printer.printPaths(c, v);
 //                }
             }
             //reset model for next iteration
             c.clearModel();
-        } 
+            timer = System.nanoTime();
         }
-        for (int i = 0; i<tests.size(); i++)
-        {
-            System.out.print(tests.get(i)+": ");
-            System.out.print(traveltimes.get(i)+"  Veh through: ");
-            System.out.println(vehs.get(i));
+            long iterationTime  = timer(timer);
+            timer = System.nanoTime();
+            
+            System.setOut(o);
+            System.out.println(numPaths+"  "+(iterationTime/Math.pow(10,9))+"   Objective  "+objectives.get(iter)+"    iterations   "+iterations.get(iter));
+            iter++;
+            System.setOut(console);
+        //Bracked for the for loop
         }
-        
     }
         
     
@@ -369,9 +350,9 @@ public class Main {
 //        return dummyNup;
         if (demand > 0)
         {
-            if (T < 10)
+            if (T < 120)
             {
-                return 2;
+                return 15;
             }
         }
         return 0;

@@ -22,14 +22,22 @@ public class Link
     // the flow on this link
     private double x;
     
-    // parameters for travel time calculation. t_ff is the free flow time, C is the capacity, alpha and beta are the calibration parameters in the BPR function
-    private double t_ff, C, alpha, beta;
+    // capacity per lane in veh/hr
+    private double C;
+    
+    // alpha and beta are the calibration parameters in the BPR function
+    private double alpha, beta;
+    
+    // Free flow speed in mi/hr
+    private double uf;
     
     // the start and end nodes of this link. Links are directed.
     private Node start, end;
     
     // parameters for the LTM model. -w is the speed at congested flow, kjam is the jam density, L is the length of the link, and uf is the free flow speed.
     //private double w, kjam, uf;
+    
+    // link length in miles
     private double L;
     
     private IloNumVar [] N_up;
@@ -42,11 +50,11 @@ public class Link
     
     
     // construct this Link with the given parameters
-    public Link(Node start, Node end, double t_ff, double C, double alpha, double beta, double L)
+    public Link(Node start, Node end, double uf, double C, double alpha, double beta, double L)
     {
         this.start = start;
         this.end = end;
-        this.t_ff = t_ff;
+        this.uf = uf;
         this.C = C;
         this.alpha = alpha;
         this.beta = beta;
@@ -57,48 +65,41 @@ public class Link
         
     }
     
-    public double getTravelTime()
-    {
-        // fill this in
-        double t_ij = t_ff*(1+alpha*Math.pow((x/C),beta));
-        
-        return t_ij;
-    }
     
-    //returns w
+    //returns w in mi/hr
     public double getW()
     {
         return getuf()/2;
     }
     
-    //returns jam density
+    //returns jam density veh/mi
     public double getKJam()
     {
         return 240;
     }
     
-    //returns free flow speed
+    //returns free flow speed mi/hr
     public double getuf()
     {
-        return L/t_ff;
+        return uf;
     }
     
+    //returns free flow travel time in sec
     public double gettf()
     {
-        return t_ff;
+        return (L/uf)*3600;
     }
     
-    //returns length
+    //returns length in miles
     public double getL()
     {
         return L;
     }
     
-    //returns Capacity (Qmax)
+    //returns Capacity in veh/hr
     public double getCapacity()
     {
-        double Cap = C;
-        return Cap;
+        return C;
     }
     
     //returns Start node of link

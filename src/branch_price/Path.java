@@ -94,8 +94,6 @@ public class Path extends ArrayList<Link_TE> implements Comparable<Path>
     {
         for (Link_TE L: this)
         {
-            //L.printLink();
-            //System.out.println("Start Link: "+i+" End Link: "+j+" Time: "+t);
             if (L.getStart().getLink() == i && L.getEnd().getLink() == j && L.getStart().getTime() == t)
             {
                 // System.out.println("worked");
@@ -111,7 +109,6 @@ public class Path extends ArrayList<Link_TE> implements Comparable<Path>
         double s = 0;
         for (Link_TE L: this)
         {
-            //s = s + L.getLinkMu()*CheckZeta1up(L.getStart().getTime(), L.getStart().getLink());
             s += L.getLinkMu();
         }
         return s;
@@ -122,7 +119,6 @@ public class Path extends ArrayList<Link_TE> implements Comparable<Path>
         double s = 0;
         for (Link_TE L: this)
         {
-            //s = s + L.getLinkPsi()*CheckZeta1down(L.getEnd().getTime(), L.getEnd().getLink());
             s += L.getLinkPsi();
         }
         return s;
@@ -148,9 +144,9 @@ public class Path extends ArrayList<Link_TE> implements Comparable<Path>
         return s;
     }
     
-    public void CalculateReducedCost(Vehicle v, int T)
+    public void CalculateReducedCost(Vehicle v)
     {
-        C_pi = this.getPathTravelTime() - v.getAlpha(T) - v.getRho() + this.getMuCost()  - this.getPsiCost() - this.getThetaCost() - this.getLambdaCost();
+        C_pi = this.getPathTravelTime() - v.getEta() - v.getRho() + this.getMuCost()  + this.getPsiCost() - this.getThetaCost() - this.getLambdaCost();
     }
     
     public double getReducedCost()
@@ -158,10 +154,12 @@ public class Path extends ArrayList<Link_TE> implements Comparable<Path>
         return C_pi;
     }
     
-    public void printRCComponents(Vehicle v, int T)
+    public void printRCComponents(Vehicle v)
     {
         System.out.println("Travel Time: "+this.getPathTravelTime());
-        System.out.println("Alpha: "+v.getAlpha(T));
+        System.out.println("Assignment: "+v.assignment);
+        System.out.println("Eta: "+v.getEta());
+        System.out.println("Eta*Assignment: "+(1-v.assignment)*v.getEta());
         System.out.println("Rho: "+v.getRho());
         System.out.println("Mu: "+this.getMuCost());
         System.out.println("Psi: "+this.getPsiCost());
@@ -176,11 +174,6 @@ public class Path extends ArrayList<Link_TE> implements Comparable<Path>
         {
             L.printLink();
         }
-//        for (Link_TE L: this)
-//        {
-//            L.getStart().printNode();
-//            System.out.println("Cost: "+L.getStart().cost);
-//        }
         System.out.println("RC: "+getReducedCost());
     }
     

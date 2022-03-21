@@ -207,12 +207,12 @@ public class Network
         //Create Source Nodes
         for (int i = 0; i<sourceNodes.size(); i++) 
         {
-            source[i] = new Link(nodes[0], zones[sourceNodes.get(i)-1], 1, 100000000, 1, 1, 1);
+            source[i] = new Link(nodes[0], zones[sourceNodes.get(i)-1], 3600, 100000000, 1, 1, 1);
         }
         //Create Sinks Nodes
         for (int i = 0; i<sinkNodes.size(); i++) 
         {
-            sink[i] = new Link(zones[sinkNodes.get(i)-1], nodes[numnodes-1], 1, 100000000, 1, 1, 1);
+            sink[i] = new Link(zones[sinkNodes.get(i)-1], nodes[numnodes-1], 3600, 100000000, 1, 1, 1);
         }
 
         //1 source and 1 sink
@@ -437,54 +437,7 @@ public class Network
         return null;
     }
     
-    public void dijkstras(Node r)
-    {
-        for (Node n : nodes)
-        {
-            n.cost = Double.MAX_VALUE;
-            n.predecessor = null;
-        }
-        int org = r.getId()-1;
-        nodes[org].cost = 0;
-        ArrayList<Node> Q = new ArrayList<>();        
-        for (int i = org; i<nodes.length; i++)
-        {
-            Q.add(nodes[i]);
-        }
-
-        Node u = null;
-        while (Q.size() >= 1)
-        {
-          double minC = Double.MAX_VALUE;
-            for (Node node : Q) 
-            {
-                if (node.cost < minC) 
-                {
-                    u = node;
-                    minC = node.cost;
-                }
-            }
-          for (int i = 0; i < Q.size(); i++) 
-          {
-              if (Q.get(i) == u)
-              {
-                  Q.remove(i);
-              }
-          }
-          for (Link v : u.getOutgoing())
-          {
-              if (u.cost + v.getTravelTime() < v.getEnd().cost)
-              {
-                  v.getEnd().cost = u.cost + v.getTravelTime();
-                  v.getEnd().predecessor = u;
-                  if (!Q.contains(v.getEnd()))
-                  {
-                      Q.add(v.getEnd());
-                  }
-              }
-          }
-        }
-    }
+    
     
 
 }

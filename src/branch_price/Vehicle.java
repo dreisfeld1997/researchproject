@@ -22,16 +22,17 @@ public class Vehicle
     private ArrayList<Path> Rp; 
     private Node origin, dest;
     private int time, alpha, id;
-    public double rho, assignment;
-    public IloRange rangeV;
+    public double rho, eta, assignment;
+    public IloRange rangeV, rangeP;
     private IloNumVar P;
     
-    public Vehicle(Node origin, Node dest, int time, double rho, int id)
+    public Vehicle(Node origin, Node dest, int time, double rho, double eta, int id)
     {
         this.origin = origin;
         this.dest = dest;
         this.time = time;
         this.rho = rho;
+        this.eta = eta;
         Rp = new ArrayList<>();
         this.id = id;
     }
@@ -60,30 +61,54 @@ public class Vehicle
     {
         Rp.add(pi);
     }
-    
-    public void updateRho(double d)
-    {
-        rho = d;
-    }
-    
-    public double getRho()
-    {
-        return rho;
-    }
-    
+        
     public ArrayList<Path> getPaths()
     {
         return Rp;
     }  
     
+    //update dual variables
+    public void updateRho(double d)
+    {
+        rho = d;
+    }
+    
+    public void updateEta(double d)
+    {
+        eta = d;
+    }
+    
+    //get dual variables
+    public double getRho()
+    {
+        return rho;
+    }
+    
+    public double getEta()
+    {
+        return eta;
+    }
+    
+    //create ranges for variables
     public void createRangeV(IloRange R)
     {
         rangeV = R;
     }
     
+        public void createRangeP(IloRange R)
+    {
+        rangeP = R;
+    }
+        
+    //get ranges
     public IloRange getRangeV()
     {
         return rangeV;
+    }
+    
+    public IloRange getRangeP()
+    {
+        return rangeP;
     }
     
     public void CreateP(IloCplex cplex) throws IloException
@@ -98,17 +123,6 @@ public class Vehicle
     
     public double getAlpha(int T)
     {
-        //return T - time;
-        return (1-assignment)*(T - time);
-    }
-    
-    public void assign(double a)
-    {
-        assignment = a;
-    }
-    
-    public void reassign()
-    {
-        assignment = 0;
+        return T - time;
     }
 }

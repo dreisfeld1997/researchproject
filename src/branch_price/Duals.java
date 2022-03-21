@@ -26,6 +26,7 @@ public class Duals
         for (Vehicle v: V)
         {
             v.updateRho(c.getDual(v.getRangeV()));
+            v.updateEta(c.getDual(v.getRangeP()));
             printVehDuals(v);
 
         }
@@ -39,6 +40,13 @@ public class Duals
             System.out.print("Rho dual: ");
             System.out.println(-v.getRho());
         }
+        
+//        if (v.getEta() != 0 & x == 0)
+//        {
+//            System.out.print("Vehicle: "+v.getId()+" ");
+//            System.out.print("Eta dual: ");
+//            System.out.println(v.getEta());
+//        }
     }
     
     public void printPsiDuals(Link l, int t)

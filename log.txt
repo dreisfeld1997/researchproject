@@ -1,0 +1,1 @@
+44  1.499E-6   Objective  41896.0    iterations   51

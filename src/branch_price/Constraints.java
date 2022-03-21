@@ -23,7 +23,7 @@ public class Constraints
     
     public void setVehConstraints(ArrayList<Vehicle> V, IloCplex c) throws IloException
     {
-        IloRange range;
+        IloRange range1, range2;
         for (Vehicle v: V)
         {
             IloLinearNumExpr const1 = c.linearNumExpr();
@@ -31,199 +31,134 @@ public class Constraints
             {
                 const1.addTerm(1,p.getDelta());
             }
-            range = c.addLe(const1, 1);
-            v.createRangeV(range);
+            range1 = c.addLe(const1, 1);
+            range2 = c.addEq(c.sum(const1, v.getP()),1);
+            v.createRangeV(range1);
+            v.createRangeP(range2);
         }
     }
     
-    public void setSourceConstraints(ArrayList<Vehicle> V, Link[] source, IloCplex c, int T) throws IloException
+    public void setSourceConstraints(ArrayList<Vehicle> V, Link[] source, IloCplex c, int dt, int duration) throws IloException
     {
         IloRange range1, range2;
         for (Link l: source)
         {
-            for (int t=0; t<T-1; t++)
+            for (int t=0; t<duration; t += dt)
             {
-                IloLinearNumExpr A = c.linearNumExpr();
-                IloLinearNumExpr constDem = c.linearNumExpr();
-                //IloLinearNumExpr B = c.linearNumExpr();
-
+                IloLinearNumExpr Dem = c.linearNumExpr();
+                IloLinearNumExpr flowOut = c.linearNumExpr();
                 for (Vehicle v: V)
                 {
                     for (Path p: v.getPaths())
                     {
-                        constDem.addTerm(p.CheckZeta1up(t, l),p.getDelta());
-                        A.addTerm(p.CheckZeta1down(t, l),p.getDelta());
+                        Dem.addTerm(p.CheckZeta1up(t, l),p.getDelta());
+                        flowOut.addTerm(p.CheckZeta1down(t, l), p.getDelta());
                     }
                 }
 
                 //Demand Loading Constraint
-                c.addEq(c.sum(l.getNup(t+1),c.prod(-1,l.getNup(t)),c.prod(-1,constDem)),0);
+                c.addEq(c.sum(l.getNup((t+dt)/dt),c.prod(-1,l.getNup(t/dt)),c.prod(-1,Dem)),0);
 
+                //Constraint 16d
+                range2 = c.addEq(c.sum(l.getNdown((t+dt)/dt),c.prod(-1,l.getNdown(t/dt)),c.prod(-1,flowOut)),0);
+                l.getTENodeDown(t/dt).createRangeN(range2); //lambda dual 
+                
                 //Constraint 16e
-                range1 = c.addLe(c.sum(A,c.prod(-1,l.getSending(t))),0);
-
-                if (t>0)
+                range1 = c.addLe(c.sum(flowOut,c.prod(-1,l.getSending(t/dt))),0);
+                l.getTENodeDown(t/dt).createRangeL(range1); //psi dual
+                
+                if (t >= l.gettf()-dt && (t + dt - l.gettf()) <= duration)
                 {
-                    l.getTENodeDown(t).createRangeL(range1); //psi dual
-                    //l.getTENodeDown(t+1).createRangeL(range1); //psi dual
+                    c.addGe(c.sum(l.getNup((t+dt-(int)(l.gettf()))/dt),c.prod(-1,l.getNdown(t/dt))),l.getSending(t/dt));
                 }
-
-                //Constraint 16g
-                if (t >= (int)(l.getL()/l.getuf())-1 && (t -(int)(l.getL()/l.getuf())) < T-1)
-                {
-                    c.addGe(c.sum(l.getNup(t+1-(int)(l.getL()/l.getuf())),c.prod(-1,l.getNdown(t))),l.getSending(t));
-                }
-
 
                //Constraint 16h
-                c.addLe((c.prod(1,l.getSending(t))),l.getCapacity());
-
-                IloLinearNumExpr B = c.linearNumExpr();
-                for (Link_TE j: l.getTENodeDown(t).getOutgoing())
-                {
-                    for (Vehicle v: V)
-                    {
-                        for (Path p: v.getPaths())
-                        {
-                            B.addTerm(p.CheckZeta2(t,l,j.getEnd().getLink()),p.getDelta());
-                        }
-                    }
-                }
-                //Constraint 16d
-                range2 = c.addEq(c.sum(l.getNdown(t+1),c.prod(-1,l.getNdown(t)),c.prod(-1,B)),0);
-                if (t>0)
-                {
-                   l.getTENodeDown(t).createRangeN(range2); //lambda dual
-                }   
+                c.addLe((c.prod(1,l.getSending(t/dt))),l.getCapacity()*dt/3600);
             }
         }
     }
     
-    public void setLinkConstraints(ArrayList<Vehicle> V, Link[] links, IloCplex c, int T, Network network) throws IloException
+    public void setLinkConstraints(ArrayList<Vehicle> V, Link[] links, IloCplex c, int dt, int duration, Network network) throws IloException
     {
         IloRange range1, range2, range3, range4;
         for (Link l: links)
         {
-            for (int t=0; t<T-1; t++)
+            for (int t=0; t<duration; t += dt)
             {
-                IloLinearNumExpr A = c.linearNumExpr();
-                IloLinearNumExpr B = c.linearNumExpr();
+                IloLinearNumExpr flowIn = c.linearNumExpr();
+                IloLinearNumExpr flowOut = c.linearNumExpr();
                 for (Vehicle v: V)
                 {
                     for (Path p: v.getPaths())
                     {
-                        A.addTerm(p.CheckZeta1up(t, l),p.getDelta());
-                        B.addTerm(p.CheckZeta1down(t, l),p.getDelta());
+                        flowIn.addTerm(p.CheckZeta1up(t, l),p.getDelta());
+                        flowOut.addTerm(p.CheckZeta1down(t, l), p.getDelta());
                     }
                 }                  
                 //Constraint 16c
-                range1 = c.addEq(c.sum(l.getNup(t+1),c.prod(-1,l.getNup(t)),c.prod(-1,A)),0);
-
+                range1 = c.addEq(c.sum(l.getNup((t+dt)/dt),c.prod(-1,l.getNup(t/dt)),c.prod(-1,flowIn)),0);
+                l.getTENodeUp(t/dt).createRangeL(range1); //mu
+                
+                //Constraint 16d
+                range3 = c.addEq(c.sum(l.getNdown((t+dt)/dt),c.prod(-1,l.getNdown(t/dt)),c.prod(-1,flowOut)),0);
+                l.getTENodeDown(t/dt).createRangeN(range3); //lambda dual
+                
                 //Constraint 16e
-                range2 = c.addLe(c.sum(B,c.prod(-1,l.getSending(t))),0);
-                if (t > 0)
-                {
-                    l.getTENodeUp(t).createRangeL(range1); //mu
-                    l.getTENodeDown(t).createRangeL(range2); //psi
-                }
+                range2 = c.addLe(c.sum(flowOut,c.prod(-1,l.getSending(t/dt))),0);
+                l.getTENodeDown(t/dt).createRangeL(range2); //psi
+                
+                
+                //constraint 16f
+                range4 = c.addLe(c.sum(flowIn, c.prod(-1,l.getReceiving(t/dt))),0);
+                l.getTENodeUp(t/dt).createRangeN(range4);
 
                 //Constraint 16g
-                if (t >= (int)(l.getL()/l.getuf())-1 && (t -(int)(l.getL()/l.getuf())) < T-1)
+                if (t >= l.gettf()-dt && (t + dt - l.gettf()) <= duration)
                 {
-                    c.addGe(c.sum(l.getNup(t+1-(int)(l.getL()/l.getuf())),c.prod(-1,l.getNdown(t))),l.getSending(t));
+                    c.addGe(c.sum(l.getNup((t+dt-(int)(l.gettf()))/dt),c.prod(-1,l.getNdown(t/dt))),l.getSending(t/dt));
                 }
-
+    
                //Constraint 16h
-                c.addLe((c.prod(1,l.getSending(t))),l.getCapacity());
+                c.addLe((c.prod(1,l.getSending(t/dt))),l.getCapacity()*dt/3600);
                  
                 //Constraint 16i
-                if (t >= (int)(l.getL()/l.getW())-1)
+                if (t >= (int)(l.getL()/l.getW())-dt && (t+dt - (l.getL()/l.getW())) <= duration)
                 {
-                    c.addGe(c.sum(c.prod(1,l.getNdown(t+1-(int)(l.getL()/l.getW()))),c.prod(-1, l.getNup(t)),c.prod(-1,l.getReceiving(t))), -1*l.getL()*l.getKJam());
+                    c.addGe(c.sum(c.prod(1,l.getNdown((t+dt-(int)(l.getL()/l.getW()))/dt)),c.prod(-1, l.getNup(t/dt)),c.prod(-1,l.getReceiving(t/dt))), -1*l.getL()*l.getKJam());
                 }
 
                 //Constraint 16j
-                c.addLe(l.getReceiving(t),l.getCapacity());
+                c.addLe(l.getReceiving(t/dt),l.getCapacity()*dt/3600);
 
-                //new constraints
-                IloLinearNumExpr C = c.linearNumExpr();
-                for (Link_TE j: l.getTENodeDown(t).getOutgoing())
-                {
-                    for (Vehicle v: V)
-                    {
-                        for (Path p: v.getPaths())
-                        {
-                            C.addTerm(p.CheckZeta2(t,l,j.getEnd().getLink()),p.getDelta());
-                        }
-                    }
-                }
-                //Constraint 16d
-                range3 = c.addEq(c.sum(l.getNdown(t+1),c.prod(-1,l.getNdown(t)),c.prod(-1,C)),0);
-                if (t>0)
-                {
-                    l.getTENodeDown(t).createRangeN(range3); //lambda dual
-                }
-                for (Link_TE j: l.getTENodeUp(t).getIncoming())
-                {
-                    IloLinearNumExpr D = c.linearNumExpr();
-                    for (Vehicle v: V)
-                    {
-                        for (Path p: v.getPaths())
-                        {
-                            D.addTerm(p.CheckZeta2(t,l,j.getEnd().getLink()),p.getDelta());
-                        }
-                    }
-                    //constraint 16f
-                    range4 = c.addLe(c.sum(D, c.prod(-1,l.getReceiving(t))),0);
-                    if (t>0)
-                    {
-                        l.getTENodeUp(t).createRangeN(range4);
-                    }   
-                } 
+                
+
             }
         }
     }
     
-    public void setSinkConstraints(ArrayList<Vehicle> V, Link[] sink, IloCplex c, int T) throws IloException
+    public void setSinkConstraints(ArrayList<Vehicle> V, Link[] sink, IloCplex c, int dt, int duration) throws IloException
     {
         IloRange range1, range2;
         for (Link l: sink)
             {
-                for (int t=0; t<T-1; t++)
+                for (int t=0; t<duration; t += dt)
                 {
-                    IloLinearNumExpr A = c.linearNumExpr();
-                    //IloLinearNumExpr B = c.linearNumExpr();
+                    IloLinearNumExpr flowIn = c.linearNumExpr();
                     for (Vehicle v: V)
                     {
                         for (Path p: v.getPaths())
                         {
-                            A.addTerm(p.CheckZeta1up(t, l),p.getDelta());
+                            flowIn.addTerm(p.CheckZeta1up(t, l),p.getDelta());
                         }
                     }
                     //Constraint 16c
-                    range1 = c.addEq(c.sum(l.getNup(t+1),c.prod(-1,l.getNup(t)),c.prod(-1,A)),0);
+                    range1 = c.addEq(c.sum(l.getNup((t+dt)/dt),c.prod(-1,l.getNup(t/dt)),c.prod(-1,flowIn)),0);
+                    l.getTENodeUp(t/dt).createRangeL(range1);
                     
-                    if (t>0)
-                    {
-                        l.getTENodeUp(t).createRangeL(range1);
-                    }
-                    for (Link_TE j: l.getTENodeUp(t).getIncoming())
-                    {
-                        IloLinearNumExpr B = c.linearNumExpr();
-                        for (Vehicle v: V)
-                        {
-                            for (Path p: v.getPaths())
-                            {
-                                B.addTerm(p.CheckZeta2(t,l,j.getEnd().getLink()),p.getDelta());
-                            }
-                        }
-                        //Constraint 16f
-                        range2 = c.addLe(c.sum(B,c.prod(-1,l.getReceiving(t))),0);
-                        if (t>0)
-                        {
-                            l.getTENodeUp(t).createRangeN(range2);
-                        }
-                    }
+                    //Constraint 16f
+                    range2 = c.addLe(c.sum(flowIn,c.prod(-1,l.getReceiving(t/dt))),0);
+                    l.getTENodeUp(t/dt).createRangeN(range2);
+                    
                 }
             }
     }

@@ -17,50 +17,38 @@ import java.util.ArrayList;
  */
 public class ObjectiveFunction 
 {
-    private IloLinearNumExpr obj1;
-    private IloNumExpr obj3;
+    private IloLinearNumExpr obj1, obj2;
     public ObjectiveFunction()
     { 
     }
     
-    public void CreateObjective(ArrayList<Vehicle> V, IloCplex c, int T) throws IloException
+    public void CreateObjective(ArrayList<Vehicle> V, IloCplex c, int duration) throws IloException
     {
             obj1 = c.linearNumExpr();
-            obj3 = null;
+            obj2 = c.linearNumExpr();
             
             for (Vehicle v: V)
             {
-                IloLinearNumExpr obj2 = c.linearNumExpr();
-                int count = 0;
                 for (Path p: v.getPaths())
                 {
-                    count++;
                     obj1.addTerm(p.getPathTravelTime(),p.getDelta());
-                    obj2.addTerm(-v.getAlpha(T),p.getDelta());
                 }
                 
-                if(obj3 == null)
-                {
-                    obj3 = c.sum(v.getAlpha(T),obj2);
-                }
-                else
-                {
-                    obj3 = c.sum(obj3, c.sum(v.getAlpha(T),obj2));
-                }  
+                obj2.addTerm(v.getP(),v.getAlpha(duration));
             }
-            c.addMinimize(c.sum(obj1,obj3));
+            c.addMinimize(c.sum(obj1,obj2));
     }
     
     public void PrintObjective(IloCplex c) throws IloException
     {
         System.out.print("Objective: ");
-        System.out.println(c.getValue(c.sum(obj1,obj3)));
+        System.out.println(c.getValue(c.sum(obj1,obj2)));
         //System.out.println(c.getValue(obj1));
         //System.out.println(c.getValue(obj3));
     }
     
     public double getObjective(IloCplex c) throws IloException
     {
-        return c.getValue(c.sum(obj1,obj3));
+        return c.getValue(c.sum(obj1,obj2));
     }
 }

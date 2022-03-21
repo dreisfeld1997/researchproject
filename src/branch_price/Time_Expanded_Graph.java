@@ -20,14 +20,14 @@ public class Time_Expanded_Graph
     ArrayList<Link_TE> TE_NodeLinks = new ArrayList<>();
     ArrayList<Link_TE> TE_AllLinks = new ArrayList<>();
     
-    public Time_Expanded_Graph(Link[] source, Link[] sink, Link[] links, int T)
+    public Time_Expanded_Graph(Link[] source, Link[] sink, Link[] links, int dt, int duration)
     {
         
         //Create Time Expanded Nodes
         double initC = 0;
         for (Link l: source)
         {
-            for (int t = 0; t<T; t++)
+            for (int t = 0; t<duration+1; t += dt)
             {
                 String dir = "up";
                 Node_TE N = new Node_TE(l,dir,t, initC, initC, initC, initC);
@@ -45,7 +45,7 @@ public class Time_Expanded_Graph
         
         for (Link l: links)
         {
-            for (int t = 0; t<T; t++)
+            for (int t = 0; t<duration+1; t += dt)
             {
                 String dir = "up";
                 Node_TE N = new Node_TE(l,dir,t, initC, initC, initC, initC);
@@ -63,7 +63,7 @@ public class Time_Expanded_Graph
         
         for (Link l: sink)
         {
-            for (int t = 0; t<T; t++)
+            for (int t = 0; t<duration+1; t += dt)
             {
                 String dir = "up";
                 Node_TE N = new Node_TE(l,dir,t, initC, initC, initC, initC);
@@ -87,7 +87,7 @@ public class Time_Expanded_Graph
                 if (m.getLink().equals(n.getLink()))
                 {
                     Link l = m.getLink();
-                    int minTT = (int)Math.ceil(l.getL()/l.getuf());
+                    int minTT = (int)l.gettf();
                     if (n.getTime() - m.getTime() >= minTT)
                     {
                         Link_TE A = new Link_TE(m,n);
@@ -158,9 +158,6 @@ public class Time_Expanded_Graph
     
     public void relax(Node_TE i)
     {
-//        System.out.println();
-//        System.out.print("Node: ");
-//        i.printNode();
         for (Link_TE Links: i.getOutgoing())
         {
             Node_TE j = Links.getEnd();
@@ -170,8 +167,6 @@ public class Time_Expanded_Graph
                 {
                     j.cost = i.cost + Links.getLinkTT()+Links.getLinkMu() - Links.getLinkPsi();
                     j.predecessor = i;
-//                    System.out.print("Successor: ");
-//                    j.printNode();
                 }
             }
             else
@@ -180,8 +175,6 @@ public class Time_Expanded_Graph
                 {
                     j.cost = i.cost + Links.getLinkTT() - Links.getNodeTheta() - Links.getNodeLambda();
                     j.predecessor = i;
-//                    System.out.print("Successor: ");
-//                    j.printNode();
                 }
             }
         }
