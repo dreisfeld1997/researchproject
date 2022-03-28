@@ -6,6 +6,7 @@
 package branch_price;
 
 import ilog.concert.IloIntVar;
+import ilog.concert.IloNumVar;
 
 /**
  *

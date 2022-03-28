@@ -21,12 +21,12 @@ public class Vehicle
 {
     private ArrayList<Path> Rp; 
     private Node origin, dest;
-    private int time, alpha, id;
+    private int time, alpha, id, quantity;
     public double rho, eta, assignment;
     public IloRange rangeV, rangeP;
     private IloNumVar P;
     
-    public Vehicle(Node origin, Node dest, int time, double rho, double eta, int id)
+    public Vehicle(Node origin, Node dest, int time, double rho, double eta, int quantity)
     {
         this.origin = origin;
         this.dest = dest;
@@ -34,7 +34,8 @@ public class Vehicle
         this.rho = rho;
         this.eta = eta;
         Rp = new ArrayList<>();
-        this.id = id;
+        //this.id = id;
+        this.quantity = quantity;
     }
     
     public Node getOrigin()
@@ -55,6 +56,11 @@ public class Vehicle
     public int getId()
     {
         return id;
+    }
+    
+    public int getQuantity()
+    {
+        return quantity;
     }
     
     public void addPath(Path pi)

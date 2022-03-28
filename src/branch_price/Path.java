@@ -64,40 +64,40 @@ public class Path extends ArrayList<Link_TE> implements Comparable<Path>
     }
     
     
-    public int CheckZeta1up(int t, Link i)
+    public int CheckZeta1up(int t, Link i, Vehicle v)
     {
         for (Link_TE L: this)
         {
             Link A = L.getStart().getLink();
             if (A == i && L.getStart().getTime() == t && L.getStart().getDirection().equals("up"))
             {
-                return 1;
+                return 1*v.getQuantity();
             }
         }
         return 0;
     }
     
-    public int CheckZeta1down(int t, Link i)
+    public int CheckZeta1down(int t, Link i, Vehicle v)
     {
         for (Link_TE L: this)
         {
             Link A = L.getStart().getLink();
             if (A == i && L.getStart().getTime() == t && L.getStart().getDirection().equals("down"))
             {
-                return 1;
+                return 1*v.getQuantity();
             }
         }
         return 0;
     }
     
-    public int CheckZeta2(int t, Link i, Link j)
+    public int CheckZeta2(int t, Link i, Link j, Vehicle v)
     {
         for (Link_TE L: this)
         {
             if (L.getStart().getLink() == i && L.getEnd().getLink() == j && L.getStart().getTime() == t)
             {
                 // System.out.println("worked");
-                return 1;
+                return 1*v.getQuantity();
             }
         }
         return 0;

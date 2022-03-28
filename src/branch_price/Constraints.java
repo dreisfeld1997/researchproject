@@ -51,8 +51,8 @@ public class Constraints
                 {
                     for (Path p: v.getPaths())
                     {
-                        Dem.addTerm(p.CheckZeta1up(t, l),p.getDelta());
-                        flowOut.addTerm(p.CheckZeta1down(t, l), p.getDelta());
+                        Dem.addTerm(p.CheckZeta1up(t, l, v),p.getDelta());
+                        flowOut.addTerm(p.CheckZeta1down(t, l, v), p.getDelta());
                     }
                 }
 
@@ -91,8 +91,8 @@ public class Constraints
                 {
                     for (Path p: v.getPaths())
                     {
-                        flowIn.addTerm(p.CheckZeta1up(t, l),p.getDelta());
-                        flowOut.addTerm(p.CheckZeta1down(t, l), p.getDelta());
+                        flowIn.addTerm(p.CheckZeta1up(t, l, v),p.getDelta());
+                        flowOut.addTerm(p.CheckZeta1down(t, l, v), p.getDelta());
                     }
                 }                  
                 //Constraint 16c
@@ -148,7 +148,7 @@ public class Constraints
                     {
                         for (Path p: v.getPaths())
                         {
-                            flowIn.addTerm(p.CheckZeta1up(t, l),p.getDelta());
+                            flowIn.addTerm(p.CheckZeta1up(t, l, v),p.getDelta());
                         }
                     }
                     //Constraint 16c

@@ -28,8 +28,8 @@ public class Main {
     public static void main(String[] args) throws IloException, FileNotFoundException
     {
         // Time for model
-        int dt = 6;
-        int duration = 1200;
+        int dt = 12;
+        int duration = 900;
         int T = duration/dt + 1;
         
         // Allowable paths to be store per vehicle
@@ -45,12 +45,12 @@ public class Main {
         ArrayList<Double> objectives = new ArrayList<>();
         ArrayList<Integer> iterations = new ArrayList<>();
         int iter = 0;
-        for (int num=44; num<45; num++)
+        for (int num=20; num<111; num+=5)
         {
             int numPaths = num;
 
         //read in network data
-        Network network = new Network("ColumnTest1");
+        Network network = new Network("ColumnTest5");
         
         //Creates printer class
         PrintCounts printer = new PrintCounts();
@@ -129,11 +129,36 @@ public class Main {
                 double Demand = z.getDemand(d);
                 for (int i = 0; i<duration; i += dt)
                 {
-                    for (int j = 0; j<createDummyNup(Demand, i); j++)
+//                    for (int j = 0; j<createDummyNup(Demand, i); j++)
+//                    {
+//                        Vehcount++;
+//                        //Create new vehicle
+//                        Vehicle v = new Vehicle(z,d,i,0,0,Vehcount);
+//                        V.add(v);
+//                        Node_TE start = findLink(source, v.getOrigin().getId()).getTENodeUp(v.getTime()/dt);
+//                        for (Node_TE SortedNode : TopoSort) 
+//                        {
+//                            SortedNode.cost = Double.MAX_VALUE;
+//                            if (SortedNode == start)
+//                            {
+//                                SortedNode.cost = 0;
+//                            }
+//                        }
+//                        for (Node_TE n: TopoSort)
+//                        {
+//                            G.relax(n);
+//                        }
+//                        Link dest = network.findLink(v.getDest(), nodes[nodes.length-1]);
+//                        Path pi = G.trace(start, G.destinationNodeTE(dest));
+//                        pi.createDelta(c);
+//                        v.CreateP(c);
+//                        v.addPath(pi);
+//                        pi.CalculateReducedCost(v);
+//                    }
+                    int quantity = createDummyNup(Demand, i);
+                    if (quantity > 0)
                     {
-                        Vehcount++;
-                        //Create new vehicle
-                        Vehicle v = new Vehicle(z,d,i,0,0,Vehcount);
+                        Vehicle v = new Vehicle(z,d,i,0,0,quantity);
                         V.add(v);
                         Node_TE start = findLink(source, v.getOrigin().getId()).getTENodeUp(v.getTime()/dt);
                         for (Node_TE SortedNode : TopoSort) 
@@ -193,8 +218,8 @@ public class Main {
             Const.setLinkConstraints(V, links, c, dt, duration, network);
             Const.setSinkConstraints(V, sink, c, dt, duration);
             
-            long consttimer = timer(timer);
-            timer = System.nanoTime();
+            //long consttimer = timer(timer);
+            //timer = System.nanoTime();
 
             //--------------------------------------------------------------------------------------------------------------
             //Create/Solve objective function
@@ -210,8 +235,8 @@ public class Main {
             
             obj.PrintObjective(c);
             
-            long solvetimer = timer(timer);
-            timer = System.nanoTime();
+            //long solvetimer = timer(timer);
+            //timer = System.nanoTime();
 
             //Calculate number of Vehicles assigned to a path
             double vehOnPath = 0;
@@ -219,7 +244,7 @@ public class Main {
             {
                 for (Path p: v.getPaths())
                 {
-                    vehOnPath += c.getValue(p.getDelta());
+                    vehOnPath += v.getQuantity()*c.getValue(p.getDelta());
                 }
             }
             
@@ -234,8 +259,8 @@ public class Main {
             D.updateSinkDuals(sink, c, T);
             
             
-            long dualtimer = timer(timer);
-            timer = System.nanoTime();
+            //long dualtimer = timer(timer);
+            //timer = System.nanoTime();
             
             //--------------------------------------------------------------------------------------------------------
             //Solve New Pricing Problem
@@ -243,7 +268,7 @@ public class Main {
             for (Vehicle v: V)
             {
                 int duplicate = 0;
-                Node_TE start = findLink(source, v.getOrigin().getId()).getTENodeUp(v.getTime());
+                Node_TE start = findLink(source, v.getOrigin().getId()).getTENodeUp(v.getTime()/dt);
                 for (Node_TE SortedNode : TopoSort) 
                 {
                     SortedNode.cost = Double.MAX_VALUE;
@@ -291,14 +316,14 @@ public class Main {
                 }
                 
             }
-            if (count > 300)
+            if (count > 500)
             {
                 x = 1;
             }
             
-            long sptimer = timer(timer);
-            timer = System.nanoTime();
-            printer.printTimer(consttimer, solvetimer, dualtimer, sptimer);
+            //long sptimer = timer(timer);
+            //timer = System.nanoTime();
+            //printer.printTimer(consttimer, solvetimer, dualtimer, sptimer);
             //printer.print(links, source, sink, c, dt, duration);
             
             if (x!= 0)
@@ -310,12 +335,11 @@ public class Main {
                 
 //                for (Vehicle v: V)
 //                {
-//                    //printer.printPaths(c, v);
+//                    printer.printPaths(c, v);
 //                }
             }
             //reset model for next iteration
             c.clearModel();
-            timer = System.nanoTime();
         }
             long iterationTime  = timer(timer);
             timer = System.nanoTime();

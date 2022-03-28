@@ -31,10 +31,12 @@ public class ObjectiveFunction
             {
                 for (Path p: v.getPaths())
                 {
-                    obj1.addTerm(p.getPathTravelTime(),p.getDelta());
+                    double tt = v.getQuantity()*p.getPathTravelTime();
+                    obj1.addTerm(tt,p.getDelta());
                 }
                 
-                obj2.addTerm(v.getP(),v.getAlpha(duration));
+                double alpha = v.getAlpha(duration)*v.getQuantity();
+                obj2.addTerm(v.getP(),alpha);
             }
             c.addMinimize(c.sum(obj1,obj2));
     }
