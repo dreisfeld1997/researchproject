@@ -147,6 +147,13 @@ public class Path extends ArrayList<Link_TE> implements Comparable<Path>
     public void CalculateReducedCost(Vehicle v)
     {
         C_pi = this.getPathTravelTime() - v.getEta() - v.getRho() + this.getMuCost()  + this.getPsiCost() - this.getThetaCost() - this.getLambdaCost();
+//        System.out.println("travel time: "+this.getPathTravelTime());
+//        System.out.println("Eta: "+v.getEta());
+//        System.out.println("Rho: "+v.getRho());
+//        System.out.println("Mu: "+this.getMuCost());
+//        System.out.println("Psi: "+this.getPsiCost());
+//        System.out.println("theta: "+this.getThetaCost());
+//        System.out.println("lambda: "+this.getLambdaCost());
     }
     
     public double getReducedCost()

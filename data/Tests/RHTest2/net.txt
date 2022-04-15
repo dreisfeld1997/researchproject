@@ -1,0 +1,10 @@
+ <NUMBER OF ZONES> 3											
+<NUMBER OF NODES> 3											
+<FIRST THRU NODE> 2											
+<NUMBER OF LINKS> 2
+<END OF METADATA>											
+
+
+~ 	Init node 	Term node 	Capacity 	Length 	Free Flow Speed	 B	Power	Speed limit 	Toll 	Type	;
+	1	2	900	1	60	1	1	0	0	1	;
+	2	3	900	1	60	1	1	0	0	1	;

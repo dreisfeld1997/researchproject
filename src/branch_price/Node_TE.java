@@ -164,6 +164,21 @@ public class Node_TE
         return rangeN;
     }
     
+    //Reservation Huersitic Methods
+    //adds link l to the list of outgoing links from this node
+    public void RemoveOutgoingLink(Link_TE l)
+    {
+        int i = this.outgoing.indexOf(l);
+        this.outgoing.remove(i);
+    }
+    
+    //adds link l to the list of incoming links to this node
+    public void RemoveIncomingLink(Link_TE l)
+    {
+        int i = this.incoming.indexOf(l);
+        this.incoming.remove(i);
+    }
+    
     protected double cost;
     protected Node_TE predecessor;
 }

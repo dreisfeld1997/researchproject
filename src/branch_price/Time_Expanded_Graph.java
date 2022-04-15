@@ -34,9 +34,11 @@ public class Time_Expanded_Graph
                 //Store Node_TE
                 TE_Nodes_Up.add(N);
                 l.TE_Nodes_up.add(N);
-                
-                dir = "down";
-                N = new Node_TE(l,dir,t, initC, initC, initC, initC);
+            }
+            for (int t = 0; t<duration+1; t += dt)
+            {
+                String dir = "down";
+                Node_TE N = new Node_TE(l,dir,t, initC, initC, initC, initC);
                 //Store Node_TE
                 TE_Nodes_Down.add(N);
                 l.TE_Nodes_down.add(N);
@@ -91,6 +93,7 @@ public class Time_Expanded_Graph
                     if (n.getTime() - m.getTime() >= minTT)
                     {
                         Link_TE A = new Link_TE(m,n);
+                        A.getCapacity(dt);//reservation heurstic
                         TE_Links.add(A);
                         m.addAllTELinks(A);
                     }
@@ -109,6 +112,7 @@ public class Time_Expanded_Graph
                     if (end.getOutgoing().contains(n.getLink()))
                     {
                         Link_TE A = new Link_TE(m,n);
+                        A.getCapacity(dt); //reservation heurstic
                         TE_NodeLinks.add(A);
                         m.addAllTELinks(A);
                     }
@@ -215,6 +219,8 @@ public class Time_Expanded_Graph
         double c = Double.MAX_VALUE;
         for (Node_TE n: L.getAllTENodesDown())
         {
+            //n.printNode();
+            //System.out.println(n.cost);
             if (n.cost < c)
             {
                 finaldest = n;
@@ -222,7 +228,5 @@ public class Time_Expanded_Graph
             }
         }
         return finaldest;
-    }
-    
-    
+    }   
 }
