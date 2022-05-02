@@ -6,6 +6,6 @@
 
 
 ~ 	Init node 	Term node 	Capacity 	Length 	Free Flow Speed	 B	Power	Speed limit 	Toll 	Type	;
-	1	2	2700	1	60	1	1	0	0	1	;
-	2	3	2700	1	60	1	1	0	0	1	;
-	4	2	2700	2	60	1	1	0	0	1	;
+	1	2	2700	0.25	60	1	1	0	0	1	;
+	2	3	2700	0.25	60	1	1	0	0	1	;
+	4	2	2700	.5	60	1	1	0	0	1	;

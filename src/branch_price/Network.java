@@ -99,15 +99,7 @@ public class Network
         
         for (int r = 0; r<numzones; r++)
         {
-            int sum = 0;
-            for (int c = 0; c<numzones; c++)
-            {
-                sum += OD[r][c];
-            }
-            if (sum > 0)
-            {
-                sourceNodes.add(r+1);
-            }
+            sourceNodes.add(r+1);
         }
         
         for (int c = 0; c<numzones; c++)

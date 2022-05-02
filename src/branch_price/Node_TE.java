@@ -169,14 +169,20 @@ public class Node_TE
     public void RemoveOutgoingLink(Link_TE l)
     {
         int i = this.outgoing.indexOf(l);
-        this.outgoing.remove(i);
+        if (i >= 0)
+        {
+            this.outgoing.remove(i);
+        }
     }
     
     //adds link l to the list of incoming links to this node
     public void RemoveIncomingLink(Link_TE l)
     {
         int i = this.incoming.indexOf(l);
-        this.incoming.remove(i);
+        if (i >= 0)
+        {
+            this.incoming.remove(i);
+        }
     }
     
     protected double cost;

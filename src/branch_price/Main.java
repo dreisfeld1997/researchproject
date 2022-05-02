@@ -24,12 +24,10 @@ public class Main {
      */
     public static void main(String[] args) throws IloException, FileNotFoundException {
         // Time for model
-        int dt = 30;
+        int dt = 6;
         int duration = 600;
         int T = duration / dt + 1;
 
-        // Allowable paths to be store per vehicle
-        //int numPaths = 70;
         // Creating a File object that represents the disk file.
         PrintStream o = new PrintStream(new File("log.txt"));
 
@@ -44,8 +42,7 @@ public class Main {
             int numPaths = num;
 
             //read in network data
-            Network network = new Network("SiouxFalls2");
-
+            Network network = new Network("RHTest4");
             //Creates printer class
             PrintCounts printer = new PrintCounts();
 
@@ -55,19 +52,21 @@ public class Main {
             Link[] links = network.getLinks();
             Link[] source = network.getSources();
             Link[] sink = network.getSinks();
-
+            //--------------------------------------------------------------------------------------------------------------
             //--------------------------------------------------------------------------------------------------------------
             //Create Time Expanded Graph G
+            //--------------------------------------------------------------------------------------------------------------
             //--------------------------------------------------------------------------------------------------------------
             Time_Expanded_Graph G = new Time_Expanded_Graph(source, sink, links, dt, duration);
             G.combineAllNodes();
             G.combineAllLinks();
             ArrayList<Node_TE> TE_AllNodes = G.getAllNodes();
             ArrayList<Link_TE> ReservationH = new ArrayList<>(); //store all remove links
-            ReservationH = G.TE_AllLinks;
+            
             //--------------------------------------------------------------------------------------------------------------
             // Topoligical Sort
             //--------------------------------------------------------------------------------------------------------------
+            
             TopologicalSort.Graph graph = new TopologicalSort.Graph(TE_AllNodes);
 
             for (Link_TE L : G.getTELinks()) {
@@ -102,103 +101,58 @@ public class Main {
                 l.createNdown(T, c);
                 l.createReceiving(T, c);
             }
+            
+            
             //--------------------------------------------------------------------------------------------------------------
-            //Load Vehicle Demand
             //--------------------------------------------------------------------------------------------------------------
-
+            //Load Vehicle Demand plus Reservation Hueristic
+            //--------------------------------------------------------------------------------------------------------------
+            //--------------------------------------------------------------------------------------------------------------
+            
+            ReservationHueristic R = new ReservationHueristic();
             ArrayList<Vehicle> V = new ArrayList<>();
-            int Vehcount = 0;
-            for (Zone z : zones) {
-                for (Zone d : zones) {
+     
+            for (Zone z : zones) 
+            {
+                for (Zone d : zones) 
+                {
                     double Demand = z.getDemand(d);
-                    for (int i = 0; i < duration; i += dt) {
+                    for (int i = 0; i < duration; i += dt) 
+                    { 
                         int quantity = createDummyNup(Demand, i);
-                        if (quantity > 0) {
+                        if (quantity > 0) 
+                        {
                             Vehicle v = new Vehicle(z, d, i, 0, 0, quantity);
                             V.add(v);
                             Node_TE start = findLink(source, v.getOrigin().getId()).getTENodeUp(v.getTime() / dt);
-                            int remainQuantity = quantity;
-                            System.out.println("Quantity: "+remainQuantity);
-                            while (remainQuantity > 0) //loop through until all vehicles at a path are assigned
-                            {
-                                for (Node_TE SortedNode : TopoSort) {
-                                    SortedNode.cost = Double.MAX_VALUE;
-                                    if (SortedNode == start) {
-                                        SortedNode.cost = 0;
-                                        System.out.println("sorted: ");
-                                    }
-                                }
-                                for (Node_TE n : TopoSort) 
-                                {
-//                                    n.printNode();
-//                                    System.out.println("Outgoing");
-//                                    for (Link_TE Links: n.getOutgoing())
-//                                    {
-//                                        Links.printLink();
-//                                    }
-                                    G.relax(n);
-                                }
-                                Link dest = network.findLink(v.getDest(), nodes[nodes.length - 1]);
-                                Path pi = G.trace(start, G.destinationNodeTE(dest));
-                                pi.createDelta(c);
-                                v.CreateP(c);
-                                v.addPath(pi);
-                                pi.CalculateReducedCost(v);
-
-                                //reservation huerstic
-                                //get amount of vehicles that will fit on the path
-                                double availCap = Double.MAX_VALUE;
-                                for (Link_TE l : pi) 
-                                {
-                                    if (l.getRemainingCapacity() < availCap) 
-                                    {
-                                        availCap = l.getRemainingCapacity();
-                                    }
-                                }
-                                System.out.println("availCap: "+availCap);
-                                int flowAvail = (int)Math.floor(availCap);
-                                for (Link_TE l : pi) 
-                                {
-                                    if (remainQuantity < availCap) 
-                                    {
-                                        l.updateOccupancy(remainQuantity);
-                                        remainQuantity = 0;
-                                    } 
-                                    else 
-                                    {
-                                        l.updateOccupancy(flowAvail);
-                                        remainQuantity = remainQuantity - flowAvail;
-                                    }
-                                    l.checkCapacity();
-
-                                    //removes link from Time Expanded graph if capacity is reached
-                                    if (l.getFull()) {
-                                        l.removeLink();
-                                        ReservationH.add(l);
-                                    }
-                                    System.out.println("remain q: "+remainQuantity);
-                                }
-                            }
-
+                            R.loadQuantity(quantity, TopoSort, start, G, v, c, network, nodes, ReservationH);
                         }
                     }
                 }
             }
+            R.RestoreLinks(ReservationH);
+            //System.out.println("Final Volume: "+R.volume);
 
-            for (Link_TE l : ReservationH) {
-                l.restoreLink();
-            }
-
-//        for (Vehicle v: V)
-//        {
-//            System.out.println("Vehicle: ");
-//            for (Path p: v.getPaths())
-//            {
-//                p.printPath();
-//            }
-//        }
             //long timer = System.nanoTime();
             //System.out.println("Vehicle Loading: "+(timer/Math.pow(10,9)));
+            
+            
+            //--------------------------------------------------------------------------------------------------------------
+            //--------------------------------------------------------------------------------------------------------------
+            //Get Upperbound Solution
+            //--------------------------------------------------------------------------------------------------------------
+            //--------------------------------------------------------------------------------------------------------------
+            int upperbound = 0;
+            for (Vehicle v: V)
+            {
+                for (Path p: v.getPaths())
+                {
+                    upperbound += p.getOccupancy()*p.getPathTravelTime();
+                }
+            }
+            System.out.println("Upperbound: "+upperbound);
+            
+            
             //--------------------------------------------------------------------------------------------------------------
             //--------------------------------------------------------------------------------------------------------------
             //Column Generation Loop
@@ -237,16 +191,21 @@ public class Main {
                 //Solve Linear Program
                 c.solve();
                 c.setOut(null);
-
                 obj.PrintObjective(c);
 
                 //long solvetimer = timer(timer);
                 //timer = System.nanoTime();
                 //Calculate number of Vehicles assigned to a path
+                
                 double vehOnPath = 0;
                 for (Vehicle v : V) {
-                    for (Path p : v.getPaths()) {
+                    //System.out.println("Vehicle:     start: "+v.getOrigin().id+" dest: "+v.getDest().id+" quantity: "+v.getQuantity());
+                    for (Path p : v.getPaths()) 
+                    {
+                        //p.printPath();
+                        //System.out.println("Delta: "+c.getValue(p.getDelta()));
                         vehOnPath += v.getQuantity() * c.getValue(p.getDelta());
+                        //p.printRCComponents(v);
                     }
                 }
 
@@ -285,7 +244,7 @@ public class Main {
                     if (duplicate == 0) {
                         p.CalculateReducedCost(v);
                         double c_pi = p.getReducedCost();
-
+                        //System.out.println("c_pi: "+c_pi);
                         if (c_pi < 0) 
                         {
                             //System.out.println("Path added with RC: "+c_pi);
@@ -308,7 +267,7 @@ public class Main {
                     }
 
                 }
-                if (count > 500) {
+                if (count > 100) {
                     x = 1;
                 }
 
@@ -320,12 +279,7 @@ public class Main {
                     obj.PrintObjective(c);
                     System.out.println("Vehicles on a Path: " + vehOnPath);
                     objectives.add(obj.getObjective(c));
-                    iterations.add(count);
-
-//                for (Vehicle v: V)
-//                {
-//                    printer.printPaths(c, v);
-//                }
+                    iterations.add(count); 
                 }
                 //reset model for next iteration
                 c.clearModel();
@@ -342,28 +296,12 @@ public class Main {
     }
 
     public static int createDummyNup(double demand, int T) {
-//        int dummyNup;
-//        double minute_demand = demand/60;
-//        int min_demand_rounded = (int) Math.round(minute_demand);
-//        if (T <= 59-1)
-//        {
-//            dummyNup = min_demand_rounded;
-//        }
-//        else if (T == 60-1)
-//        {
-//            dummyNup  = (int)(demand - min_demand_rounded*59);
-//        }
-//        else
-//        {
-//            dummyNup = 0;
-//        }
-//        return dummyNup;
         int flow = 0;
         if (demand > 0) 
         {
-            if (T < 60) 
+            if (T < 120) 
             {
-                flow = (int)demand/2;  
+                flow = 6;  
             }
         }
         return flow;

@@ -19,6 +19,7 @@ public class Path extends ArrayList<Link_TE> implements Comparable<Path>
 {
     private IloNumVar delta;
     private double C_pi;
+    double occupancy = 0;
     
     public double getPathTravelTime()
     {
@@ -147,6 +148,7 @@ public class Path extends ArrayList<Link_TE> implements Comparable<Path>
     public void CalculateReducedCost(Vehicle v)
     {
         C_pi = this.getPathTravelTime() - v.getEta() - v.getRho() + this.getMuCost()  + this.getPsiCost() - this.getThetaCost() - this.getLambdaCost();
+        //C_pi = this.getPathTravelTime() - v.getRho() + this.getMuCost()  + this.getPsiCost() - this.getThetaCost() - this.getLambdaCost();
 //        System.out.println("travel time: "+this.getPathTravelTime());
 //        System.out.println("Eta: "+v.getEta());
 //        System.out.println("Rho: "+v.getRho());
@@ -196,6 +198,16 @@ public class Path extends ArrayList<Link_TE> implements Comparable<Path>
             x = 1;
         }    
         return x;
+    }
+    
+    public void updateOccupancy(double volume)
+    {
+        occupancy += volume;
+    }
+    
+    public double getOccupancy()
+    {
+        return occupancy;
     }
 
 }

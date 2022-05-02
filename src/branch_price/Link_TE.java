@@ -15,6 +15,7 @@ public class Link_TE
     private double occupancy;
     private double capacity;
     private boolean full;
+    private int linkcontroller;
     
     public Link_TE(Node_TE start, Node_TE end)
     {
@@ -23,6 +24,7 @@ public class Link_TE
         occupancy = 0;
         capacity = 0;
         full = false;
+        linkcontroller = 0;
         
         start.addOutgoingLink(this);
         end.addIncomingLink(this);
@@ -94,13 +96,20 @@ public class Link_TE
     {
         double c1 = start.getLink().getCapacity()*dt/3600;
         double c2 = end.getLink().getCapacity()*dt/3600;
-        if (c1 <= c2)
+        if (c1 == c2)
         {
             capacity = c1;
+            linkcontroller = 3;
+        }
+        else if (c1 < c2)
+        {
+            capacity = c1;
+            linkcontroller = 1;
         }
         else
         {
             capacity = c2;
+            linkcontroller = 2;
         }
     }
     
@@ -127,5 +136,10 @@ public class Link_TE
     {
         start.addOutgoingLink(this);
         end.addIncomingLink(this);
+    }
+    
+    public int getLinkController()
+    {
+        return linkcontroller;
     }
 }
