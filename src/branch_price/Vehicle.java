@@ -131,4 +131,9 @@ public class Vehicle
     {
         return T - time;
     }
+    
+    public void printVehicle()
+    {
+        System.out.println("Vehicle     Origin: "+origin+" Destination: "+dest+" Time: "+time+" Quantity: "+quantity);
+    }
 }

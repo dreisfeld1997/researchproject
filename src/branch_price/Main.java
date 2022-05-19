@@ -24,8 +24,8 @@ public class Main {
      */
     public static void main(String[] args) throws IloException, FileNotFoundException {
         // Time for model
-        int dt = 6;
-        int duration = 600;
+        int dt = 180;
+        int duration = 3600;
         int T = duration / dt + 1;
 
         // Creating a File object that represents the disk file.
@@ -42,7 +42,7 @@ public class Main {
             int numPaths = num;
 
             //read in network data
-            Network network = new Network("RHTest4");
+            Network network = new Network("SiouxFalls");
             //Creates printer class
             PrintCounts printer = new PrintCounts();
 
@@ -222,7 +222,8 @@ public class Main {
                 //--------------------------------------------------------------------------------------------------------
                 //Solve New Pricing Problem
                 //--------------------------------------------------------------------------------------------------------
-                for (Vehicle v : V) {
+                for (Vehicle v : V) 
+                {
                     int duplicate = 0;
                     Node_TE start = findLink(source, v.getOrigin().getId()).getTENodeUp(v.getTime() / dt);
                     for (Node_TE SortedNode : TopoSort) {
@@ -231,8 +232,9 @@ public class Main {
                             SortedNode.cost = 0;
                         }
                     }
-
-                    for (Node_TE n : TopoSort) {
+                    
+                    for (Node_TE n : TopoSort) 
+                    {
                         G.relax(n);
                     }
 
@@ -254,20 +256,23 @@ public class Main {
                     }
 
                     // update the reduced costs
-                    for (Path pi : v.getPaths()) {
+                    for (Path pi : v.getPaths()) 
+                    {
                         pi.CalculateReducedCost(v);
                     }
 
                     Collections.sort(v.getPaths());
 
-                    // Only keep certain number of paths in the Restricted Path set
-                    if (v.getPaths().size() > numPaths) {
+                    //Only keep certain number of paths in the Restricted Path set
+                    if (v.getPaths().size() > numPaths) 
+                    {
                         int index = v.getPaths().size() - 1;
                         v.getPaths().remove(index);
                     }
 
                 }
-                if (count > 100) {
+                
+                if (count > 1000) {
                     x = 1;
                 }
 
@@ -299,12 +304,19 @@ public class Main {
         int flow = 0;
         if (demand > 0) 
         {
-            if (T < 120) 
+            if (T < 900) 
             {
-                flow = 6;  
+                flow = (int)demand/50;
             }
         }
         return flow;
+//        if (demand > 0) {
+//            if (T < 900) 
+//            {
+//                return 6;
+//            }
+//        }
+//        return 0;
     }
 
     public static int checkPath(Path pi, Vehicle v) {

@@ -1,1 +1,0 @@
-50  350.448053999   Objective  129753.0    iterations   101
